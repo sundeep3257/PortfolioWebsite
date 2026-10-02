@@ -1,16 +1,19 @@
 /**
  * Keeps the SPA shell aligned to the *visible* viewport (Chrome mobile URL bar,
- * keyboards, etc.) and applies a short-landscape inset so the 960×540 design
- * frame — including project-page chrome that sits near the top — stays on screen.
+ * keyboards, etc.).
  *
- * Desktop / laptop: visualViewport ≈ window and the short-landscape pad is off,
- * so --s and layout match the previous 100vw / 100vh behaviour.
+ * Short phone landscapes get a small top-only cushion so hanging project chrome
+ * stays clear of the browser UI — without the old symmetric letterbox that
+ * crushed the 960×540 frame into a thin strip.
+ *
+ * Desktop / laptop: visualViewport ≈ window and pads stay 0, so --s and layout
+ * match the previous 100vw / 100vh behaviour.
  */
 
 const SHORT_LANDSCAPE_MAX_HEIGHT = 520
-/** Extra letterbox on short phone landscapes (beyond safe-area). */
-const SHORT_LANDSCAPE_PAD_Y = 36
-const SHORT_LANDSCAPE_PAD_X = 12
+/** Top cushion under mobile browser chrome (no matching bottom letterbox). */
+const SHORT_LANDSCAPE_PAD_TOP = 8
+const SHORT_LANDSCAPE_PAD_X = 0
 
 function isShortLandscape(width: number, height: number) {
   return width > height && height <= SHORT_LANDSCAPE_MAX_HEIGHT
@@ -30,8 +33,10 @@ export function applyVisualLayout() {
   root.style.setProperty('--vv-left', `${offsetLeft}px`)
   root.style.setProperty('--vv-width', `${width}px`)
   root.style.setProperty('--vv-height', `${height}px`)
-  root.style.setProperty('--frame-pad-y', short ? `${SHORT_LANDSCAPE_PAD_Y}px` : '0px')
-  root.style.setProperty('--frame-pad-x', short ? `${SHORT_LANDSCAPE_PAD_X}px` : '0px')
+  root.style.setProperty('--frame-pad-top', short ? `${SHORT_LANDSCAPE_PAD_TOP}px` : '0px')
+  root.style.setProperty('--frame-pad-bottom', '0px')
+  root.style.setProperty('--frame-pad-left', short ? `${SHORT_LANDSCAPE_PAD_X}px` : '0px')
+  root.style.setProperty('--frame-pad-right', short ? `${SHORT_LANDSCAPE_PAD_X}px` : '0px')
   root.dataset.shortLandscape = short ? 'true' : 'false'
 }
 

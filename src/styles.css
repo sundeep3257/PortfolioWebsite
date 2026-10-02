@@ -8,16 +8,22 @@
   --vv-width: 100vw;
   --vv-height: 100vh;
   --vv-height: 100dvh;
-  --frame-pad-x: 0px;
-  --frame-pad-y: 0px;
+  --frame-pad-top: 0px;
+  --frame-pad-right: 0px;
+  --frame-pad-bottom: 0px;
+  --frame-pad-left: 0px;
   --safe-t: env(safe-area-inset-top, 0px);
   --safe-r: env(safe-area-inset-right, 0px);
   --safe-b: env(safe-area-inset-bottom, 0px);
   --safe-l: env(safe-area-inset-left, 0px);
-  --layout-top: calc(var(--vv-top) + var(--safe-t) + var(--frame-pad-y));
-  --layout-left: calc(var(--vv-left) + var(--safe-l) + var(--frame-pad-x));
-  --layout-width: calc(var(--vv-width) - var(--safe-l) - var(--safe-r) - 2 * var(--frame-pad-x));
-  --layout-height: calc(var(--vv-height) - var(--safe-t) - var(--safe-b) - 2 * var(--frame-pad-y));
+  --layout-top: calc(var(--vv-top) + var(--safe-t) + var(--frame-pad-top));
+  --layout-left: calc(var(--vv-left) + var(--safe-l) + var(--frame-pad-left));
+  --layout-width: calc(
+    var(--vv-width) - var(--safe-l) - var(--safe-r) - var(--frame-pad-left) - var(--frame-pad-right)
+  );
+  --layout-height: calc(
+    var(--vv-height) - var(--safe-t) - var(--safe-b) - var(--frame-pad-top) - var(--frame-pad-bottom)
+  );
   /* One "design pixel": the reference render is 960x540 and is contain-fitted to the layout box. */
   --s: min(calc(var(--layout-width) / 960), calc(var(--layout-height) / 540));
   /* Extra design px that station rings gain on screen when the camera zooms in (set by CameraRig). */
@@ -27,11 +33,13 @@
   color-scheme: dark;
 }
 
-/* Before JS runs: same short-landscape letterbox visualLayout.ts applies. */
+/* Before JS runs: tiny top cushion only — no bottom letterbox. */
 @media (orientation: landscape) and (max-height: 520px) {
   :root {
-    --frame-pad-x: 12px;
-    --frame-pad-y: 36px;
+    --frame-pad-top: 8px;
+    --frame-pad-bottom: 0px;
+    --frame-pad-left: 0px;
+    --frame-pad-right: 0px;
   }
 }
 
@@ -2600,9 +2608,10 @@ html[data-expanded='projects'] .station-label--projects {
   left: 50%;
   top: calc(-26 * var(--s));
   width: max-content;
-  min-width: calc(244 * var(--s));
+  min-width: 0;
   max-width: 100%;
   transform: translateX(-50%);
+  pointer-events: none;
 }
 
 .ps-sign__rod {
@@ -2645,6 +2654,7 @@ html[data-expanded='projects'] .station-label--projects {
   border: calc(1.5 * var(--s)) solid rgba(248, 236, 189, 0.88);
   border-radius: calc(4 * var(--s));
   background: linear-gradient(180deg, #1a1a30, #0d0a15);
+  overflow: hidden;
   box-shadow:
     0 0 calc(24 * var(--s)) rgba(248, 236, 189, 0.32),
     0 0 calc(48 * var(--s)) rgba(248, 236, 189, 0.12),
@@ -2683,6 +2693,7 @@ html[data-expanded='projects'] .station-label--projects {
   text-align: center;
   text-transform: uppercase;
   white-space: nowrap;
+  overflow: hidden;
   color: var(--cream);
   text-shadow: 0 0 calc(14 * var(--s)) rgba(248, 236, 189, 0.75), 0 0 calc(28 * var(--s)) rgba(248, 236, 189, 0.28);
   /* Optical center: letter-spacing otherwise pushes the last glyph right. */

@@ -74,7 +74,10 @@ function ProjectNavButton({
 
 /**
  * Hanging station sign: grows with the title up to the space between the
- * prev/next controls, then shrinks the type until the name fits on one line.
+ * prev/next controls, then shrinks type (and tracking) until the name fits.
+ *
+ * `--s` is a CSS `min(calc(...))` expression, so getPropertyValue cannot be
+ * parseFloat'd — derive the used scale from the 960-wide design frame instead.
  */
 function StationSign({ title }: { title: string }) {
   const signRef = useRef<HTMLDivElement>(null)
@@ -86,44 +89,83 @@ function StationSign({ title }: { title: string }) {
     const top = sign?.parentElement
     if (!sign || !name || !top) return
 
+    const preferredTracking = 0.22
+    const minTracking = 0.04
+    const prev = top.querySelector('.ps-nav--prev') as HTMLElement | null
+    const next = top.querySelector('.ps-nav--next') as HTMLElement | null
+    const frame = top.closest('.ps-frame') as HTMLElement | null
+
     const fit = () => {
-      const styles = getComputedStyle(sign)
-      const s = Number.parseFloat(styles.getPropertyValue('--s')) || 1
+      const s = frame && frame.clientWidth > 0 ? frame.clientWidth / 960 : Math.max(0.35, top.clientWidth / 916)
       const minWidth = 244 * s
       const padX = 28 * s
       const preferredFont = 21 * s
-      const minFont = 10 * s
-      const gap = 16 * s
+      const minFont = Math.max(5.5, 6.5 * s)
+      const gap = 12 * s
 
-      const prev = top.querySelector('.ps-nav--prev') as HTMLElement | null
-      const next = top.querySelector('.ps-nav--next') as HTMLElement | null
       const reserved =
         (prev?.offsetWidth ?? 0) + (next?.offsetWidth ?? 0) + gap * (prev && next ? 2 : prev || next ? 1 : 0)
-      const maxWidth = Math.max(minWidth, top.clientWidth - reserved)
+      // Never force the plate wider than the gap between the nav controls.
+      const maxWidth = Math.max(0, top.clientWidth - reserved)
 
+      name.style.letterSpacing = `${preferredTracking}em`
+      name.style.paddingLeft = `${preferredTracking}em`
       name.style.fontSize = `${preferredFont}px`
+      sign.style.maxWidth = `${maxWidth}px`
       sign.style.width = 'max-content'
 
       const contentWidth = name.scrollWidth + padX * 2
-      const width = Math.min(Math.max(contentWidth, minWidth), maxWidth)
-      sign.style.width = `${width}px`
+      const width = Math.min(Math.max(contentWidth, Math.min(minWidth, maxWidth)), maxWidth)
+      sign.style.width = `${Math.max(0, width)}px`
 
       const plate = name.parentElement
-      const available = plate ? Math.max(0, plate.clientWidth - padX * 2) : width - padX * 2
-      let fontSize = preferredFont
-      while (name.scrollWidth > available + 0.5 && fontSize > minFont) {
-        fontSize = Math.max(minFont, fontSize - 0.5)
-        name.style.fontSize = `${fontSize}px`
+      const available = plate ? Math.max(0, plate.clientWidth - padX * 2) : Math.max(0, width - padX * 2)
+
+      let lo = minFont
+      let hi = preferredFont
+      let best = minFont
+      for (let i = 0; i < 24; i += 1) {
+        const mid = (lo + hi) / 2
+        name.style.fontSize = `${mid}px`
+        if (name.scrollWidth <= available + 0.5) {
+          best = mid
+          lo = mid
+        } else {
+          hi = mid
+        }
+      }
+      name.style.fontSize = `${best}px`
+
+      let tracking = preferredTracking
+      while (name.scrollWidth > available + 0.5 && tracking > minTracking + 0.001) {
+        tracking = Math.max(minTracking, tracking - 0.02)
+        name.style.letterSpacing = `${tracking}em`
+        name.style.paddingLeft = `${tracking}em`
       }
     }
 
     fit()
     const observer = new ResizeObserver(fit)
     observer.observe(top)
+    if (prev) observer.observe(prev)
+    if (next) observer.observe(next)
+    if (frame) observer.observe(frame)
+
+    let cancelled = false
+    if (typeof document !== 'undefined' && document.fonts?.ready) {
+      void document.fonts.ready.then(() => {
+        if (!cancelled) fit()
+      })
+    }
+
     return () => {
+      cancelled = true
       observer.disconnect()
       sign.style.width = ''
+      sign.style.maxWidth = ''
       name.style.fontSize = ''
+      name.style.letterSpacing = ''
+      name.style.paddingLeft = ''
     }
   }, [title])
 
