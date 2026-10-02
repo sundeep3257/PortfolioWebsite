@@ -1,0 +1,13 @@
+##Title: Automated Fracture Detection
+##Subtitle: Using machine learning to detect subtle fractures
+
+##Category: Technology in Medicine
+
+##Train 1: Some injuries are especially easy to miss on xrays when abnormalities are subtle. I focused on developing automated tools for challenging diagnoses such as pediatric Monteggia fractures and subtle slipped capital femoral epiphysis (SCFE).
+
+##Train 2: I built machine-learning pipelines that analyze radiographs using image classification, segmentation, and automated anatomic measurements. For Monteggia fractures, these tools assess features such as radial head alignment and ulnar bowing, while my SCFE work focuses on detecting subtle physeal abnormalities.
+
+##Train 3: By converting subtle radiographic findings into objective, reproducible measurements, these pipelines aim to support earlier and more consistent recognition of easily missed orthopedic injuries. This work has also allowed me to explore how interpretable AI can complement clinical decision-making without replacing physician judgment.
+
+##Button Name: "Read the Paper"
+##Button Link: https://pubmed.ncbi.nlm.nih.gov/41395634/

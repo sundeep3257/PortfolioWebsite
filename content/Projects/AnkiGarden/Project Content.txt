@@ -1,0 +1,13 @@
+##Title: AnkiGarden
+##Subtitle: An Anki add-on to make studying more fun
+
+##Category: Creative Projects
+
+##Train 1: Anki is powerful for memorization, but repetitive review sessions can feel monotonous. I created AnkiGarden to make studying more engaging by transforming consistent review performance into visible progress within a growing virtual garden.
+
+##Train 2: Correct answers and review streaks earn coins, water, plants, trees, and other rewards that users can place throughout their garden. Plants grow over time, require continued care, and can bloom through special sunlight rewards.
+
+##Train 3: By linking study consistency with progression, customization, and visual rewards, AnkiGarden adds a lightweight game layer to the existing Anki workflow. The project also strengthened my skills in desktop software development and interactive UI design.
+
+##Button Name: "Download AnkiGarden"
+##Button Link: https://ankiweb.net/shared/info/1630158184

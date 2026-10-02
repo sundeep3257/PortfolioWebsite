@@ -1,0 +1,21 @@
+##Skill 1
+#Title: Automated Image Analysis
+#Bullet 1: computer vision
+#Bullet 2: region segmentation
+#Bullet 3: landmark detection
+#Bullet 4: object classification
+
+
+##Skill 2
+#Title: Machine Learning
+#Bullet 1: risk stratification
+#Bullet 2: outcome prediction
+#Bullet 3: survival modeling
+#Bullet 4: disease/patient subtyping
+
+##Skill 3
+#Title: Web Development
+#Bullet 1: backend development
+#Bullet 2: UI/UX design
+#Bullet 3: app deployment
+#Bullet 4: database design and security

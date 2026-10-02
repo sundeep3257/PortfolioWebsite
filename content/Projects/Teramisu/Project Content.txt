@@ -1,0 +1,13 @@
+##Title: Teramisu
+##Subtitle: An end-to-end platform for AI-powered medical image segmentation
+
+##Category: Technology in Medicine
+
+##Train 1: Developing custom AI models for medical image segmentation typically requires programming and machine-learning expertise. I created Teramisu to make the entire segmentation workflow accessible through a single, intuitive no-code platform.
+
+##Train 2: Teramisu (Toolkit for Robust Medical Image Segmentation with U-Net) is a standalone desktop application that allows users to annotate medical images, train and customize U-Net++ models, perform automated segmentation, and quantitatively evaluate model performance.
+
+##Train 3: Beyond model development, Teramisu provides tools for preprocessing, statistical validation, and interactive 3D reconstruction of segmented anatomy. By combining the full segmentation pipeline into one application, Teramisu lowers the technical barrier to developing and evaluating custom medical imaging AI tools.
+
+##Button Name: "Visit Teramisu"
+##Button Link: https://teramisu-website.onrender.com/

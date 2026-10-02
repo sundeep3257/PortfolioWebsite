@@ -1,0 +1,7 @@
+##Title: Hi, I'm Sundeep
+
+##Paragraph 1: I'm a medical student at WashU with a passion for building technology that improves how we study disease and deliver care. My interest in coding began at MIT, where my research focused on developing image analysis pipelines for biomedical data.
+
+##Paragraph 2: Since then, I've applied these skills to projects at the intersection of medicine and engineering, including medical image analysis, clinical decision-support tools, and full-stack web applications. I'm especially interested in building systems that are technically robust while remaining practical and intuitive for clinicians and researchers.
+
+##Paragraph 3: Outside of research, I enjoy experimenting with web design, game development, and projects that combine programming with creativity. These endeavors encourage me to focus on how thoughtful design can make technology more intuitive and engaging. Ultimately, I hope to bring this balance of technical rigor and creative thinking to building tools that push the boundaries of what technology can contribute to medicine.

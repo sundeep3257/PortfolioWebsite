@@ -1,0 +1,23 @@
+##Experience 1: WashU Med
+##Subtitle: Medical Student Researcher
+##Ticket Description: Working within the Orthopedic Surgery and Neurosurgery departments to develop AI tools for automated image analysis, disease classification, and improved patient care.
+
+##Experience 2: ArmorMed
+##Subtitle: Co-Founder & CEO
+##Ticket Description: Developing an award-winning platform for automated joint mobility assessment and longitudinal patient monitoring using computer vision and pose estimation technology.
+
+##Experience 3: MIT
+##Subtitle: Undergraduate Researcher
+##Ticket Description: Conducted research in the Lourido and Kellis labs, developing machine learning models to analyze parasite phenotypes and to predict the progression of disease-induced inflammation.
+
+##Experience 4: Brigham and Women’s Hospital
+##Subtitle: Data Science Intern
+##Ticket Description: Developed clinically-informed algorithms to more efficiently triage febrile cancer patients presenting to the emergency department.
+
+##Experience 5: MassHealth
+##Subtitle: Clinical Research Intern
+##Ticket Description: Uncovered health disparities across the state and drafted proposals aimed at expanding healthcare access to Massachusetts’ undocumented population.
+
+##Experience 6: Maine DHHS
+##Subtitle: Data Analytics Intern
+##Ticket Description: Assessed the effects of MaineCare on the accessibility of providers, health insurance, and affordable medical aid.

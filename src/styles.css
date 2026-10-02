@@ -1,0 +1,3241 @@
+:root {
+  /* One "design pixel": the reference render is 960x540 and is contain-fitted to the viewport. */
+  --s: min(calc(100vw / 960), calc(100vh / 540));
+  /* Extra design px that station rings gain on screen when the camera zooms in (set by CameraRig). */
+  --ring-growth: 0;
+  --font-display: 'Exo 2', 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0f0f17;
+}
+
+body {
+  font-family: var(--font-mono);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  user-select: none;
+}
+
+/* Skip link + text portfolio: available to keyboard/AT/crawlers, invisible in the UI. */
+.skip-link {
+  position: absolute;
+  left: 0.75rem;
+  top: 0.75rem;
+  z-index: 10000;
+  padding: 0.55rem 0.85rem;
+  border-radius: 0.35rem;
+  background: #10131d;
+  color: #8be7fd;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  text-decoration: none;
+  transform: translateY(-160%);
+  transition: transform 160ms ease;
+}
+
+.skip-link:focus {
+  transform: translateY(0);
+  outline: 2px solid #79d0ed;
+  outline-offset: 2px;
+}
+
+.seo-content {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.seo-content:focus-within {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  width: auto;
+  height: auto;
+  margin: 0;
+  padding: clamp(1.25rem, 4vw, 2.5rem);
+  overflow: auto;
+  clip: auto;
+  white-space: normal;
+  background: #0f0f17;
+  color: #e8eef8;
+  font-family: var(--font-mono);
+  line-height: 1.55;
+  user-select: text;
+}
+
+.seo-content a {
+  color: #8be7fd;
+}
+
+.app {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+
+/* Keep the canvas painting during load so warmup can compile shaders and HTML. */
+.app.is-loading .scene-canvas {
+  pointer-events: none;
+}
+
+.app.is-covered {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.app.is-loading:not(.is-fading) .design-frame {
+  opacity: 0;
+}
+
+.scene-canvas {
+  position: absolute !important;
+  inset: 0;
+  z-index: 0;
+}
+
+/* ------------------------------------------------------------------ */
+/* Design frame: a 960x540 box (in design pixels) centred on screen    */
+/* ------------------------------------------------------------------ */
+
+.design-frame {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(960 * var(--s));
+  height: calc(540 * var(--s));
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* Station labels                                                      */
+/* ------------------------------------------------------------------ */
+
+.station-label {
+  position: absolute;
+  /* Labels sit just outside the ring, so they drift outward as the camera zooms in. */
+  --dx: var(--label-dx, 0);
+  --dy: var(--label-dy, 0);
+  left: calc((var(--dx) + var(--ring-growth)) * var(--s));
+  top: calc(var(--dy) * var(--s));
+  transform: translateY(calc(-50% + var(--rise, 0px)));
+  margin: 0;
+  padding: calc(2 * var(--s)) calc(4 * var(--s));
+  border: 0;
+  background: transparent;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: calc(15.5 * var(--s));
+  letter-spacing: 0.02em;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  pointer-events: auto;
+  filter: brightness(1);
+  text-shadow: 0 0 calc(10 * var(--s)) rgba(255, 255, 255, 0.12);
+  transition: filter 160ms ease, text-shadow 160ms ease, top 450ms ease, left 450ms ease;
+}
+
+/*
+ * The middle About branch runs through the label's usual spot and the lower
+ * branch through the space below-right, so while About is open the label
+ * sits centred underneath the (enlarged) ring instead.
+ */
+html[data-expanded='about'] .station-label--about {
+  --dx: -39;
+  --dy: 46;
+}
+
+/* The six Experiences branches fan out to the right, so the label moves above the ring. */
+html[data-expanded='experiences'] .station-label--experiences {
+  --dx: -96;
+  --dy: -46;
+}
+
+/* Both Projects branches leave sideways and the train parks along the trunk, so the label sits below-left. */
+html[data-expanded='projects'] .station-label--projects {
+  --dx: -92;
+  --dy: 50;
+}
+
+.station-label.is-hovered {
+  filter: brightness(1.22);
+  text-shadow: 0 0 calc(12 * var(--s)) rgba(255, 255, 255, 0.35);
+}
+
+.station-label:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.4);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ */
+/* World panels: HTML surfaces standing in the 3D scene (WorldPanel)    */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Inside a world panel 1 CSS px = 1 design px at the station close-up zoom,
+ * so sizes are plain px. Opacity / visibility / `--rise` are driven per
+ * frame by each station's reveal timeline.
+ */
+.world-panel {
+  position: absolute;
+  left: 0;
+  width: 100%;
+  font-family: var(--font-mono);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(var(--rise, 0px));
+  user-select: none;
+}
+
+.world-panel--bottom {
+  bottom: 0;
+}
+
+.world-panel--top {
+  top: 0;
+}
+
+.world-panel--center {
+  top: 0;
+  translate: 0 -50%;
+}
+
+/* A panel whose parts drive their own reveal (each child carries opacity / --rise) */
+.world-panel--bare {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+}
+
+.world-panel button,
+.world-panel a {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.world-panel button:disabled {
+  cursor: default;
+}
+
+.world-panel :is(button, a):focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
+}
+
+/* ------------------------------------------------------------------ */
+/* Skills: three angled message boards                                 */
+/* ------------------------------------------------------------------ */
+
+/*
+ * The face of an upright slab (SignSlab supplies the 3D body, bezel and lamp).
+ * Seen from the camera's elevation the face is a little squat, so type is set
+ * slightly larger than on flat panels, and lettering is given a lift-shadow
+ * falling towards the viewer so it reads as raised from the face.
+ */
+.skill-board {
+  --accent: #79d0ed;
+  --lift: -0.6px 1.3px 0 rgba(6, 40, 56, 0.95), -1.2px 2.6px 1px rgba(0, 0, 0, 0.5);
+  color: #c3d4de;
+}
+
+.skill-board__panel {
+  padding: 1.2px;
+  background: linear-gradient(135deg, rgba(139, 231, 253, 0.55), rgba(95, 207, 234, 0.3) 55%, rgba(63, 159, 191, 0.5));
+}
+
+.skill-board__body {
+  position: relative;
+  padding: 15px 16px 17px;
+  background: linear-gradient(160deg, #1a1a30, #100f1e);
+  box-shadow: inset 0 0 26px rgba(0, 0, 0, 0.55);
+}
+
+/* Lamp light washing down the face from the bar above it */
+.skill-board__body::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 46px;
+  background: linear-gradient(180deg, rgba(139, 231, 253, 0.16), transparent);
+  pointer-events: none;
+}
+
+.skill-board__title {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin: 0 0 11px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid rgba(121, 208, 237, 0.4);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 18px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #8be7fd;
+  text-shadow: var(--lift), 0 0 12px rgba(139, 231, 253, 0.4);
+}
+
+.skill-board__items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 11.6px;
+  line-height: 18px;
+  letter-spacing: 0.01em;
+  color: #c4e2ec;
+  text-shadow: var(--lift);
+}
+
+/*
+ * Bullets cascade in one after another. `--p` (0..1, set per frame) is the
+ * list's overall progress; item `--i` of `--n` fades in during its own slice.
+ */
+.skill-board__items li {
+  --k: clamp(0, calc(var(--p, 0) * var(--n, 4) - var(--i, 0)), 1);
+  padding-left: 12px;
+  text-indent: -12px;
+  opacity: var(--k);
+  transform: translateY(calc((1 - var(--k)) * 4px));
+}
+
+.skill-board__items li::before {
+  content: '> ';
+  color: #79d0ed;
+}
+
+/* The name plate and the controls hint would collide with the station close-ups, so they step aside. */
+.branding,
+.controls {
+  transition: opacity 350ms ease;
+}
+
+.design-frame.is-expanded .branding,
+.design-frame.is-expanded .controls {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------------ */
+/* About: one large illuminated billboard                              */
+/* ------------------------------------------------------------------ */
+
+/* Face of the upright sign slab (SignSlab supplies the body and bezel) */
+.about-board {
+  /*
+   * Upright slabs are foreshortened by the camera pitch (39.4°), which makes
+   * CSS type look laterally stretched. --face-cos counters that so copy reads
+   * with the same proportions as flat WorldPanels (e.g. Experiences tickets).
+   */
+  --face-cos: cos(39.4deg);
+  --face-comp: calc(1 / var(--face-cos));
+  --accent: #79d0ed;
+  --lift: 0 1.2px 0 rgba(6, 40, 56, 0.9), 0 2.4px 1px rgba(0, 0, 0, 0.45);
+  color: #c3d4de;
+}
+
+.about-board__face {
+  position: relative;
+  /* Lay out wider, then scale X down so glyphs stay square after foreshortening. */
+  width: calc(100% * var(--face-comp));
+  transform: scaleX(var(--face-cos));
+  transform-origin: left top;
+  padding: calc(18px * var(--face-comp)) calc(24px * var(--face-comp)) calc(20px * var(--face-comp));
+  background: linear-gradient(160deg, #1a1a30, #100f1e);
+  box-shadow: inset 0 0 34px rgba(0, 0, 0, 0.55), inset 0 0 0 1.2px rgba(121, 208, 237, 0.35);
+}
+
+/* Light from the bezel washing down the face */
+.about-board__face::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: calc(80px * var(--face-comp));
+  background: linear-gradient(180deg, rgba(139, 231, 253, 0.14), transparent);
+  pointer-events: none;
+}
+
+.about-board__heading {
+  position: relative;
+  margin: 0 0 calc(12px * var(--face-comp));
+  padding-bottom: calc(10px * var(--face-comp));
+  border-bottom: 1px solid rgba(121, 208, 237, 0.4);
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: calc(25px * var(--face-comp));
+  line-height: 1.1;
+  letter-spacing: 0.04em;
+  color: #8be7fd;
+  text-shadow: var(--lift), 0 0 14px rgba(139, 231, 253, 0.45);
+}
+
+.about-board__text {
+  margin: 0;
+  font-size: calc(11px * var(--face-comp));
+  line-height: calc(15.4px * var(--face-comp));
+  letter-spacing: 0.005em;
+  color: #bfd0da;
+  text-shadow: var(--lift);
+}
+
+.about-board__text + .about-board__text {
+  margin-top: calc(9px * var(--face-comp));
+}
+
+/* Link console on the front face of the base block */
+.about-base__console {
+  display: flex;
+  align-items: stretch;
+  height: var(--console-h);
+  padding: 6px 8px;
+  background: linear-gradient(180deg, #2a2a40, #181826);
+  box-shadow: inset 0 0 0 1.2px rgba(121, 208, 237, 0.45), inset 0 8px 14px rgba(0, 0, 0, 0.35);
+}
+
+.about-base__cv,
+.about-base__social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.2px solid rgba(121, 208, 237, 0.7);
+  border-radius: 3px;
+  background: rgba(16, 18, 34, 0.95);
+  color: #9be9fb;
+  text-decoration: none;
+  box-shadow: 0 0 8px rgba(95, 207, 234, 0.25), inset 0 0 10px rgba(95, 207, 234, 0.08);
+  transition: background 160ms ease, box-shadow 160ms ease, color 160ms ease;
+}
+
+.about-base__cv:hover,
+.about-base__social:hover {
+  background: rgba(40, 60, 84, 0.95);
+  color: #d5f6ff;
+  box-shadow: 0 0 14px rgba(95, 207, 234, 0.5), inset 0 0 10px rgba(95, 207, 234, 0.14);
+}
+
+.about-base__cv {
+  flex: 1;
+  gap: 10px;
+  padding: 0 16px;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.about-base__cv-icon {
+  width: 17px;
+  height: 17px;
+  flex: none;
+}
+
+.about-base__divider {
+  width: 1px;
+  margin: 2px 10px;
+  background: rgba(121, 208, 237, 0.4);
+}
+
+.about-base__social {
+  width: 40px;
+  flex: none;
+}
+
+.about-base__social + .about-base__social {
+  margin-left: 7px;
+}
+
+.about-base__social svg {
+  width: 19px;
+  height: 19px;
+}
+
+/* Shared: a freshly selected entry slides in on a ticket / board */
+@keyframes entry-in {
+  from {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Experiences: six sub-stations and a ticket                          */
+/* ------------------------------------------------------------------ */
+
+/* Sub-station label (screen-space, anchored at the ring; sits to its right) */
+.exp-label {
+  position: absolute;
+  left: calc(30 * var(--s));
+  top: 0;
+  translate: 0 -50%;
+  transform: translateY(calc(var(--rise, 0) * var(--s)));
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: calc(1.5 * var(--s));
+  margin: 0;
+  padding: calc(3 * var(--s)) calc(6 * var(--s));
+  border: 0;
+  background: transparent;
+  /* Long names wrap before they reach the ticket's connector rail */
+  width: max-content;
+  max-width: calc(172 * var(--s));
+  font-family: var(--font-mono);
+  text-align: left;
+  color: #f6e6a4;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  transition: filter 200ms ease, text-shadow 200ms ease;
+}
+
+.exp-label__subtitle {
+  white-space: nowrap;
+}
+
+.exp-label.is-interactive {
+  pointer-events: auto;
+}
+
+/* Accent bar that lights up on the selected entry */
+.exp-label::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 15%;
+  width: calc(2 * var(--s));
+  height: 70%;
+  background: #f6e6a4;
+  box-shadow: 0 0 calc(8 * var(--s)) rgba(246, 230, 164, 0.8);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.exp-label.is-selected::before {
+  opacity: 1;
+}
+
+.exp-label.is-interactive:hover {
+  filter: brightness(1.15);
+}
+
+.exp-label__title {
+  font-weight: 600;
+  font-size: calc(12.5 * var(--s));
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  color: #f1dd93;
+  opacity: 0.72;
+  transition: opacity 300ms ease, color 300ms ease, text-shadow 300ms ease;
+}
+
+.exp-label__subtitle {
+  font-weight: 700;
+  font-size: calc(10.5 * var(--s));
+  line-height: 1.1;
+  letter-spacing: 0.02em;
+  color: #bdb9cc;
+  opacity: 0.7;
+  transition: opacity 300ms ease, color 300ms ease;
+}
+
+.exp-label.is-selected .exp-label__title {
+  opacity: 1;
+  color: #fbf1c6;
+  text-shadow: 0 0 calc(10 * var(--s)) rgba(246, 230, 164, 0.55);
+}
+
+.exp-label.is-selected .exp-label__subtitle {
+  opacity: 1;
+  color: #e6e0cf;
+}
+
+.exp-label:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.45);
+  outline-offset: 2px;
+}
+
+/* The ticket */
+.ticket {
+  --accent: #f6e6a4;
+  --stub: 58px;
+  color: #cfc9d8;
+  filter: drop-shadow(0 0 8px rgba(246, 230, 164, 0.28));
+}
+
+/* Connector: horizontal lead to the rail, the rail, and a tick out to the selected label's row */
+.ticket__connector {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ticket__connector > span {
+  position: absolute;
+  background: var(--accent);
+  box-shadow: 0 0 6px rgba(246, 230, 164, 0.6);
+  transition: top 420ms cubic-bezier(0.22, 0.8, 0.3, 1), height 420ms cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+.ticket__connector-h {
+  top: 50%;
+  height: 1.6px;
+  translate: 0 -50%;
+}
+
+.ticket__connector-rail {
+  width: 1.6px;
+  translate: -50% 0;
+}
+
+.ticket__connector-tick {
+  height: 1.6px;
+  translate: 0 -50%;
+}
+
+/* Dot where the tick meets the rail */
+.ticket__connector-tick::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  translate: 50% -50%;
+}
+
+/*
+ * Ticket outline: rounded corners, a perforation before the stub, and
+ * punched semicircles - two on the left edge and one at each end of the
+ * perforation. The notches are cut with a mask so the frame and body share
+ * the same silhouette.
+ */
+.ticket__edge {
+  --notch: calc(100% - var(--stub) - 1.4px);
+  --punch: 7px;
+  padding: 1.4px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #fbf1c6, #f6e6a4 55%, #b9a860);
+  -webkit-mask-image: radial-gradient(circle var(--punch) at var(--notch) 0, transparent 98%, #000),
+    radial-gradient(circle var(--punch) at var(--notch) 100%, transparent 98%, #000),
+    radial-gradient(circle var(--punch) at 0 22%, transparent 98%, #000),
+    radial-gradient(circle var(--punch) at 0 78%, transparent 98%, #000);
+  -webkit-mask-composite: source-in, source-in, source-in;
+  mask-image: radial-gradient(circle var(--punch) at var(--notch) 0, transparent 98%, #000),
+    radial-gradient(circle var(--punch) at var(--notch) 100%, transparent 98%, #000),
+    radial-gradient(circle var(--punch) at 0 22%, transparent 98%, #000),
+    radial-gradient(circle var(--punch) at 0 78%, transparent 98%, #000);
+  mask-composite: intersect;
+}
+
+.ticket__body {
+  display: flex;
+  border-radius: 7.6px;
+  background: linear-gradient(160deg, rgba(26, 25, 40, 0.97), rgba(16, 15, 28, 0.95));
+  overflow: hidden;
+}
+
+/* Sized to the current entry (set inline) so the ticket never carries empty space; eases between entries */
+.ticket__main {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  transition: height 380ms cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+.ticket__entry {
+  padding: 13px 16px 13px 20px;
+  animation: entry-in 380ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+
+.ticket__title {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 18px;
+  line-height: 1.1;
+  letter-spacing: 0.03em;
+  color: #f7f1f8;
+}
+
+.ticket__subtitle {
+  margin: 0;
+  font-weight: 700;
+  font-size: 10.6px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #f1dd93;
+}
+
+.ticket__rule {
+  height: 1px;
+  margin: 9px 0;
+  background: linear-gradient(90deg, rgba(246, 230, 164, 0.6), rgba(246, 230, 164, 0.08));
+}
+
+.ticket__text {
+  margin: 0;
+  font-size: 10px;
+  line-height: 14.2px;
+  color: #cfc9d8;
+}
+
+/* Tear-off stub with the "next" control */
+.ticket__stub {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--stub);
+  flex: none;
+  border-left: 1.4px dashed rgba(246, 230, 164, 0.5);
+  background: rgba(246, 230, 164, 0.05);
+}
+
+.ticket__next {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1.3px solid var(--accent);
+  border-radius: 50%;
+  background: rgba(20, 20, 36, 0.9);
+  color: var(--accent);
+  box-shadow: 0 0 8px rgba(246, 230, 164, 0.3), inset 0 0 8px rgba(246, 230, 164, 0.08);
+  transition: background 160ms ease, box-shadow 160ms ease, color 160ms ease, transform 160ms ease;
+}
+
+.ticket__next svg {
+  width: 16px;
+  height: 16px;
+}
+
+.ticket__next:hover:not(:disabled) {
+  background: rgba(60, 56, 40, 0.95);
+  color: #fff8dc;
+  box-shadow: 0 0 14px rgba(246, 230, 164, 0.55), inset 0 0 8px rgba(246, 230, 164, 0.14);
+}
+
+.ticket__next:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+/* ------------------------------------------------------------------ */
+/* Projects: two browsable columns                                     */
+/* ------------------------------------------------------------------ */
+
+/* Anchored level with the sub-station (y = 0); everything is laid out around that line. */
+.projects {
+  --accent: #f3b4a4;
+  --accent-text: #e2988e;
+  color: #bdb9cc;
+}
+
+.projects__inner {
+  position: relative;
+  height: 0;
+}
+
+.projects__header {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--row) / -2 - 44px);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid rgba(243, 180, 164, 0.4);
+}
+
+.projects__icon {
+  display: flex;
+  width: 17px;
+  height: 17px;
+  color: var(--accent);
+  filter: drop-shadow(0 0 5px rgba(243, 180, 164, 0.6));
+}
+
+.projects__icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.projects__category {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1;
+  letter-spacing: 0.06em;
+  color: var(--accent);
+  text-shadow: 0 0 10px rgba(243, 180, 164, 0.4);
+}
+
+/* Shows the active row level with the station and a fading glimpse of the next one */
+.projects__viewport {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--row) / -2);
+  height: calc(var(--row) * 1.62);
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, #000 0, #000 60%, transparent 100%);
+  mask-image: linear-gradient(180deg, #000 0, #000 60%, transparent 100%);
+}
+
+.projects__strip {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  transition: transform 480ms cubic-bezier(0.22, 0.8, 0.3, 1);
+}
+
+.project {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  height: var(--row);
+  padding: 0 4px;
+  transition: opacity 380ms ease;
+}
+
+.project.is-next {
+  opacity: 0.42;
+}
+
+.project.is-past,
+.project.is-later {
+  opacity: 0;
+}
+
+/* Faint ring one row down, where the next project's sub-station would stand */
+.projects__ghost {
+  position: absolute;
+  top: var(--row);
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--accent);
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 380ms ease;
+}
+
+.projects--left .projects__ghost {
+  right: calc(-1 * var(--gap));
+  translate: 50% -50%;
+}
+
+.projects--right .projects__ghost {
+  left: calc(-1 * var(--gap));
+  translate: -50% -50%;
+}
+
+.projects__ghost.is-visible {
+  opacity: 0.35;
+}
+
+.project__title {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14.5px;
+  line-height: 1.15;
+  letter-spacing: 0.03em;
+  color: #f7f1f8;
+}
+
+.project__subtitle {
+  margin: 0 0 8px;
+  font-size: 9.6px;
+  line-height: 13.4px;
+  color: #bdb9cc;
+}
+
+.learn-more,
+.read-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: flex-start;
+  padding: 4px 10px;
+  border: 1.1px solid var(--accent-text);
+  border-radius: 3px;
+  background: rgba(24, 18, 30, 0.88);
+  color: var(--accent);
+  font-size: 8.6px;
+  line-height: 1;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  box-shadow: 0 0 8px rgba(243, 180, 164, 0.22), inset 0 0 8px rgba(243, 180, 164, 0.07);
+  transition: background 160ms ease, box-shadow 160ms ease, color 160ms ease;
+}
+
+.learn-more svg,
+.read-more svg {
+  width: 11px;
+  height: 11px;
+}
+
+.learn-more:hover:not(:disabled):not([aria-disabled='true']),
+.read-more:hover {
+  background: rgba(70, 40, 44, 0.95);
+  color: #ffe6de;
+  box-shadow: 0 0 14px rgba(243, 180, 164, 0.5), inset 0 0 8px rgba(243, 180, 164, 0.14);
+}
+
+.learn-more[aria-disabled='true'] {
+  pointer-events: none;
+}
+
+/* Up / down controls on the side away from the station */
+.projects__nav {
+  position: absolute;
+  top: calc(var(--row) / -2 - 4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 22px;
+  height: calc(var(--row) + 8px);
+}
+
+.projects--left .projects__nav {
+  left: -34px;
+}
+
+.projects--right .projects__nav {
+  right: -34px;
+}
+
+.projects__step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1.1px solid rgba(243, 180, 164, 0.7);
+  border-radius: 3px;
+  background: rgba(24, 18, 30, 0.9);
+  color: var(--accent);
+  box-shadow: 0 0 6px rgba(243, 180, 164, 0.2);
+  transition: background 160ms ease, box-shadow 160ms ease, opacity 200ms ease;
+}
+
+.projects__step svg {
+  width: 14px;
+  height: 14px;
+}
+
+.projects__step:hover:not(:disabled) {
+  background: rgba(70, 40, 44, 0.95);
+  box-shadow: 0 0 12px rgba(243, 180, 164, 0.5);
+}
+
+.projects__step:disabled {
+  opacity: 0.28;
+}
+
+/* Position rail: one pip per project, the current one drawn as a lit bar */
+.projects__rail {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  margin: 6px 0;
+}
+
+.projects__rail i {
+  width: 4px;
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(243, 180, 164, 0.3);
+  transition: height 300ms ease, background 300ms ease, box-shadow 300ms ease;
+}
+
+.projects__rail i.is-current {
+  height: 11px;
+  background: var(--accent);
+  box-shadow: 0 0 7px rgba(243, 180, 164, 0.8);
+}
+
+.projects__count {
+  position: absolute;
+  bottom: -15px;
+  font-size: 7px;
+  letter-spacing: 0.12em;
+  white-space: nowrap;
+  color: var(--accent-text);
+}
+
+/* ------------------------------------------------------------------ */
+/* Publications: archive train and reading board                       */
+/* ------------------------------------------------------------------ */
+
+/* Year tag above each archive car (screen-space, centred on the car) */
+.pub-tag {
+  display: block;
+  margin: 0;
+  padding: calc(2 * var(--s)) calc(5 * var(--s));
+  border: 1px solid rgba(248, 236, 189, 0.5);
+  border-radius: calc(2 * var(--s));
+  background: rgba(20, 20, 32, 0.85);
+  font-family: var(--font-mono);
+  font-size: calc(8 * var(--s));
+  line-height: 1;
+  letter-spacing: 0.14em;
+  color: #ebe7b6;
+  opacity: 0;
+  pointer-events: none;
+  cursor: pointer;
+  transition: background 260ms ease, color 260ms ease, box-shadow 260ms ease, border-color 260ms ease;
+}
+
+.pub-tag.is-interactive {
+  pointer-events: auto;
+}
+
+.pub-tag.is-interactive:hover {
+  border-color: #f8ecbd;
+}
+
+.pub-tag.is-selected {
+  background: #f8ecbd;
+  border-color: #f8ecbd;
+  color: #2a2731;
+  box-shadow: 0 0 calc(10 * var(--s)) rgba(248, 236, 189, 0.55);
+}
+
+.pub-tag:focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.5);
+  outline-offset: 2px;
+}
+
+/* The reading board, hung from an overhead gantry */
+.pub-board {
+  --accent: #f8ecbd;
+  --accent-text: #ebe7b6;
+  --pole: 10px;
+  --hanger-h: 42px;
+  --beam-h: 13px;
+  color: #bdb9cc;
+  /* Bare panel stays visible for child reveals; don't steal hits while folded. */
+  pointer-events: none;
+}
+
+/* Gantry: two poles from above the frame, a beam with a lit underside, and two short hangers */
+.pub-board__gantry {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(var(--rise, 0px));
+  pointer-events: none;
+}
+
+.pub-board__gantry > span {
+  position: absolute;
+}
+
+.pub-board__pole {
+  bottom: calc(100% + var(--hanger-h) + var(--beam-h) - 2px);
+  width: var(--pole);
+  height: 720px;
+  background: linear-gradient(90deg, #1a1a28, #3a3a54 45%, #22222f);
+  box-shadow: 1px 0 0 rgba(255, 255, 255, 0.05) inset;
+}
+
+.pub-board__pole--left {
+  left: 12%;
+}
+
+.pub-board__pole--right {
+  right: 12%;
+}
+
+/* Clamp feet where the poles meet the beam */
+.pub-board__pole::after {
+  content: '';
+  position: absolute;
+  left: -5px;
+  right: -5px;
+  bottom: -4px;
+  height: 14px;
+  border-radius: 3px;
+  background: #1b1b2a;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+}
+
+.pub-board__beam {
+  left: -28px;
+  right: -28px;
+  bottom: calc(100% + var(--hanger-h));
+  height: var(--beam-h);
+  border-radius: 3px;
+  background: linear-gradient(180deg, #2f2f46, #1a1a2a);
+  border-bottom: 2.2px solid var(--accent);
+  box-shadow: 0 6px 18px rgba(248, 236, 189, 0.32), 0 1px 0 rgba(248, 236, 189, 0.35);
+}
+
+.pub-board__hanger {
+  bottom: calc(100% - 3px);
+  width: 6px;
+  height: calc(var(--hanger-h) + 3px);
+  background: linear-gradient(90deg, #1a1a28, #3a3a54 50%, #22222f);
+}
+
+.pub-board__hanger--left {
+  left: 18%;
+}
+
+.pub-board__hanger--right {
+  right: 18%;
+}
+
+.pub-board__sign {
+  position: relative;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(var(--rise, 0px));
+  filter: drop-shadow(0 0 9px rgba(248, 236, 189, 0.26));
+  pointer-events: auto;
+}
+
+.pub-board__frame {
+  border: 1.3px solid rgba(248, 236, 189, 0.85);
+  border-radius: 5px;
+  background: linear-gradient(160deg, rgba(26, 25, 40, 0.97), rgba(16, 15, 28, 0.95));
+  overflow: hidden;
+}
+
+.pub-board__entry {
+  padding: 12px 14px 10px;
+  animation: entry-in 380ms cubic-bezier(0.22, 0.8, 0.3, 1) both;
+}
+
+.pub-board__meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 0 0 7px;
+  font-size: 8.6px;
+  letter-spacing: 0.06em;
+  color: var(--accent-text);
+}
+
+.pub-board__journal {
+  font-weight: 600;
+}
+
+.pub-board__dot {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: rgba(248, 236, 189, 0.6);
+}
+
+.pub-board__title {
+  margin: 0 0 8px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13.5px;
+  line-height: 1.25;
+  letter-spacing: 0.02em;
+  color: #f7f1f8;
+}
+
+.pub-board__authors {
+  margin: 0;
+  font-size: 8.8px;
+  line-height: 12.5px;
+  color: #bdb9cc;
+}
+
+.pub-board__authors .is-me {
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.pub-board__foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px 10px;
+  border-top: 1px dashed rgba(248, 236, 189, 0.3);
+}
+
+.pub-board__steps {
+  display: flex;
+  gap: 6px;
+}
+
+.pub-board__step {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1.1px solid rgba(248, 236, 189, 0.6);
+  border-radius: 3px;
+  background: rgba(20, 20, 32, 0.9);
+  color: var(--accent);
+  box-shadow: 0 0 6px rgba(248, 236, 189, 0.18);
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.pub-board__step svg {
+  width: 14px;
+  height: 14px;
+}
+
+.pub-board__step:hover:not(:disabled) {
+  background: rgba(64, 60, 44, 0.95);
+  box-shadow: 0 0 12px rgba(248, 236, 189, 0.5);
+}
+
+.read-more {
+  --accent: #f8ecbd;
+  --accent-text: #ebe7b6;
+  box-shadow: 0 0 8px rgba(248, 236, 189, 0.2), inset 0 0 8px rgba(248, 236, 189, 0.06);
+}
+
+.read-more:hover {
+  background: rgba(64, 60, 44, 0.95);
+  color: #fff9e3;
+  box-shadow: 0 0 14px rgba(248, 236, 189, 0.5), inset 0 0 8px rgba(248, 236, 189, 0.12);
+}
+
+/* START HERE tag */
+.start-tag {
+  position: absolute;
+  left: calc((30 + var(--ring-growth)) * var(--s));
+  top: calc(1.5 * var(--s));
+  transform: translateY(calc(-50% + var(--rise, 0px)));
+  padding: calc(3.5 * var(--s)) calc(9 * var(--s)) calc(3.5 * var(--s)) calc(13 * var(--s));
+  background: #d7d4dc;
+  color: #2a2731;
+  font-family: var(--font-mono);
+  font-weight: 500;
+  font-size: calc(8.5 * var(--s));
+  letter-spacing: 0.16em;
+  line-height: 1;
+  white-space: nowrap;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 7% 50%);
+  box-shadow: 0 0 calc(14 * var(--s)) rgba(230, 226, 236, 0.28);
+}
+
+/* ------------------------------------------------------------------ */
+/* Branding (lower-left)                                               */
+/* ------------------------------------------------------------------ */
+
+.branding {
+  position: absolute;
+  left: calc(26 * var(--s));
+  top: calc(286 * var(--s));
+  color: #e9e7ee;
+}
+
+.app.is-introducing .branding {
+  animation: intro-overlay-rise 0.75s ease-out 2.05s both;
+}
+
+.app.is-introducing .controls {
+  animation: intro-overlay-rise 0.7s ease-out 2.25s both;
+}
+
+@keyframes intro-overlay-rise {
+  from {
+    opacity: 0;
+    transform: translateY(calc(14 * var(--s)));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.branding__name {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: calc(34.5 * var(--s));
+  line-height: calc(40 * var(--s));
+  letter-spacing: 0.235em;
+  display: flex;
+  flex-direction: column;
+}
+
+.branding__first {
+  color: #f1eff5;
+  text-shadow: 0 0 calc(12 * var(--s)) rgba(255, 255, 255, 0.18);
+}
+
+.branding__last {
+  color: #c98f98;
+  text-shadow: 0 0 calc(12 * var(--s)) rgba(214, 155, 141, 0.2);
+}
+
+.branding__fields {
+  margin: calc(6 * var(--s)) 0 0;
+  font-family: var(--font-display);
+  font-weight: 300;
+  font-size: calc(17.5 * var(--s));
+  letter-spacing: 0.25em;
+  color: #aca9b9;
+}
+
+.branding__rule {
+  width: calc(60 * var(--s));
+  height: calc(1.5 * var(--s));
+  margin-top: calc(21 * var(--s));
+  background: #a5808a;
+  box-shadow: 0 0 calc(6 * var(--s)) rgba(190, 140, 150, 0.35);
+}
+
+.branding__motto {
+  margin: calc(19 * var(--s)) 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: calc(5.5 * var(--s));
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: calc(14.5 * var(--s));
+  line-height: 1.15;
+  letter-spacing: 0.31em;
+  color: #8f8090;
+}
+
+/* ------------------------------------------------------------------ */
+/* Controls hint (lower-right)                                         */
+/* ------------------------------------------------------------------ */
+
+.controls {
+  position: absolute;
+  left: calc(774 * var(--s));
+  top: calc(446 * var(--s));
+  display: flex;
+  flex-direction: column;
+  gap: calc(12 * var(--s));
+  color: #8b8a96;
+}
+
+.controls__row {
+  display: flex;
+  align-items: center;
+  gap: calc(12 * var(--s));
+}
+
+.controls__icon {
+  width: calc(46 * var(--s));
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.controls__mouse {
+  width: calc(14 * var(--s));
+  height: calc(22 * var(--s));
+  fill: none;
+  stroke: #8b8a96;
+  stroke-width: 1.3;
+  stroke-linecap: round;
+}
+
+.controls__keys {
+  display: grid;
+  grid-template-columns: repeat(3, calc(14 * var(--s)));
+  grid-template-rows: repeat(2, calc(14 * var(--s)));
+  gap: calc(2 * var(--s));
+}
+
+.controls__key {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: calc(14 * var(--s));
+  height: calc(14 * var(--s));
+  border: calc(1 * var(--s)) solid #7f7e8a;
+  border-radius: calc(2 * var(--s));
+  font-family: var(--font-mono);
+  font-size: calc(8 * var(--s));
+  line-height: 1;
+  color: #9d9ca8;
+}
+
+.controls__key--up {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.controls__key--left {
+  grid-column: 1;
+  grid-row: 2;
+}
+
+.controls__key--down {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+.controls__key--right {
+  grid-column: 3;
+  grid-row: 2;
+}
+
+.controls__text {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: calc(8.2 * var(--s));
+  line-height: calc(13 * var(--s));
+  letter-spacing: 0.02em;
+  color: #8b8a96;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ */
+/* Loading overlay: a tiny looping subway line, no progress bar        */
+/* ------------------------------------------------------------------ */
+
+.loader {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: #0d0a15;
+  pointer-events: auto;
+  opacity: 1;
+  transition: opacity 480ms ease;
+}
+
+.loader.is-done {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.loader__mark {
+  position: relative;
+  width: 220px;
+  height: 36px;
+}
+
+.loader__label {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1;
+  letter-spacing: 0.12em;
+  color: rgba(195, 212, 222, 0.72);
+}
+
+.loader__rail {
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  top: 50%;
+  height: 2px;
+  background: linear-gradient(90deg, #f3b4a4, #79d0ed, #f6e6a4, #f3b4a4);
+  opacity: 0.55;
+  transform: translateY(-50%);
+  box-shadow: 0 0 8px rgba(139, 231, 253, 0.25);
+}
+
+.loader__station {
+  position: absolute;
+  top: 50%;
+  width: 12px;
+  height: 12px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  background: #0d0a15;
+  transform: translate(-50%, -50%) scale(0.82);
+  opacity: 0.3;
+  animation: loader-arrive 2.6s ease-in-out infinite;
+}
+
+.loader__station--a {
+  left: 10%;
+  color: #f3b4a4;
+  animation-delay: 0s;
+}
+
+.loader__station--b {
+  left: 37%;
+  color: #79d0ed;
+  animation-delay: 0.45s;
+}
+
+.loader__station--c {
+  left: 63%;
+  color: #f6e6a4;
+  animation-delay: 0.9s;
+}
+
+.loader__station--d {
+  left: 90%;
+  color: #f3b4a4;
+  animation-delay: 1.35s;
+}
+
+.loader__train {
+  position: absolute;
+  top: 50%;
+  left: 10%;
+  width: 22px;
+  height: 10px;
+  margin-left: -11px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #6a708f, #8be7fd);
+  box-shadow: 0 0 10px rgba(139, 231, 253, 0.55);
+  transform: translateY(-50%);
+  animation: loader-ride 2.6s cubic-bezier(0.45, 0, 0.2, 1) infinite;
+}
+
+.loader__train::before,
+.loader__train::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  width: 4px;
+  height: 4px;
+  background: rgba(13, 10, 21, 0.85);
+}
+
+.loader__train::before {
+  left: 3px;
+}
+
+.loader__train::after {
+  right: 3px;
+}
+
+@keyframes loader-ride {
+  0%,
+  6% {
+    left: 10%;
+  }
+  28% {
+    left: 37%;
+  }
+  50% {
+    left: 63%;
+  }
+  72% {
+    left: 90%;
+  }
+  88%,
+  100% {
+    left: 90%;
+  }
+}
+
+@keyframes loader-arrive {
+  0%,
+  8% {
+    opacity: 0.28;
+    transform: translate(-50%, -50%) scale(0.82);
+    box-shadow: none;
+  }
+  18%,
+  78% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 10px currentColor;
+  }
+  92%,
+  100% {
+    opacity: 0.28;
+    transform: translate(-50%, -50%) scale(0.82);
+    box-shadow: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Portrait rotate prompt (phone / narrow portrait viewports)          */
+/* ------------------------------------------------------------------ */
+
+.rotate-device {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.1rem;
+  padding: 2rem 1.5rem;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% 42%, rgba(121, 208, 237, 0.07), transparent 70%),
+    #0d0a15;
+  pointer-events: auto;
+  text-align: center;
+}
+
+.rotate-device__mark {
+  position: relative;
+  width: 7.5rem;
+  height: 7.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rotate-device__phone {
+  position: relative;
+  width: 2.65rem;
+  height: 4.4rem;
+  border: 1.5px solid rgba(139, 231, 253, 0.55);
+  border-radius: 0.55rem;
+  background: #10131d;
+  box-shadow:
+    0 0 18px rgba(139, 231, 253, 0.18),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+  transform-origin: center center;
+  animation: rotate-device-tilt 2.8s ease-in-out infinite;
+}
+
+.rotate-device__bezel {
+  position: absolute;
+  top: 0.35rem;
+  left: 50%;
+  width: 0.9rem;
+  height: 0.18rem;
+  border-radius: 999px;
+  background: rgba(172, 169, 185, 0.35);
+  transform: translateX(-50%);
+}
+
+.rotate-device__screen {
+  position: absolute;
+  inset: 0.7rem 0.35rem 0.45rem;
+  border-radius: 0.2rem;
+  background: #0f0f17;
+  overflow: hidden;
+}
+
+.rotate-device__rail {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  top: 52%;
+  height: 1.5px;
+  background: linear-gradient(90deg, #f3b4a4, #79d0ed, #f6e6a4);
+  opacity: 0.7;
+  transform: translateY(-50%);
+  box-shadow: 0 0 6px rgba(139, 231, 253, 0.35);
+}
+
+.rotate-device__station {
+  position: absolute;
+  top: 52%;
+  width: 5px;
+  height: 5px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  background: #0f0f17;
+  transform: translate(-50%, -50%);
+}
+
+.rotate-device__station--a {
+  left: 22%;
+  color: #f3b4a4;
+}
+
+.rotate-device__station--b {
+  left: 50%;
+  color: #79d0ed;
+}
+
+.rotate-device__station--c {
+  left: 78%;
+  color: #f6e6a4;
+}
+
+.rotate-device__title {
+  margin: 0.4rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: 1.15rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #f1eff5;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.12);
+}
+
+.rotate-device__copy {
+  margin: 0;
+  max-width: 16rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.55;
+  letter-spacing: 0.08em;
+  color: rgba(195, 212, 222, 0.72);
+}
+
+.rotate-device__rule {
+  width: 2.75rem;
+  height: 1.5px;
+  margin-top: 0.35rem;
+  background: #a5808a;
+  box-shadow: 0 0 6px rgba(190, 140, 150, 0.35);
+}
+
+@keyframes rotate-device-tilt {
+  0%,
+  18% {
+    transform: rotate(0deg);
+  }
+  42%,
+  68% {
+    transform: rotate(90deg);
+  }
+  88%,
+  100% {
+    transform: rotate(0deg);
+  }
+}
+
+@media (orientation: portrait) and (max-width: 900px) {
+  .rotate-device {
+    display: flex;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rotate-device__phone {
+    animation: none;
+    transform: rotate(90deg);
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Map ↔ project ride: full-screen overlay, not a separate route      */
+/* ------------------------------------------------------------------ */
+
+.page-transition {
+  --pt-duration: 3400ms;
+  --coral: #f3b4a4;
+  --cyan: #79d0ed;
+  --cyan-bright: #8be7fd;
+  --cream: #f8ecbd;
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  overflow: hidden;
+  background: #0d0a15;
+  pointer-events: auto;
+  animation: pt-overlay-fade var(--pt-duration) ease both;
+}
+
+.page-transition__frame {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(960 * var(--s));
+  height: calc(540 * var(--s));
+  transform: translate(-50%, -50%);
+}
+
+.pt-tunnel {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  animation: pt-tunnel-phase var(--pt-duration) ease both;
+}
+
+.pt-tunnel__wall {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 38%;
+  background: linear-gradient(90deg, #080610, #12101f 40%, #0d0a15);
+  opacity: 0.92;
+}
+
+.pt-tunnel__wall--l {
+  left: -8%;
+  transform: skewY(-2deg);
+}
+
+.pt-tunnel__wall--r {
+  right: -8%;
+  transform: scaleX(-1) skewY(-2deg);
+}
+
+.pt-tunnel__tracks {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: 58%;
+  height: calc(14 * var(--s));
+}
+
+.pt-tunnel__tracks span {
+  display: block;
+  height: calc(3 * var(--s));
+  border-radius: calc(2 * var(--s));
+  background: linear-gradient(90deg, var(--coral), var(--cyan), var(--cream));
+  opacity: 0.45;
+  box-shadow: 0 0 calc(10 * var(--s)) rgba(139, 231, 253, 0.2);
+}
+
+.pt-tunnel__tracks span + span {
+  margin-top: calc(5 * var(--s));
+}
+
+.pt-tunnel__streaks {
+  position: absolute;
+  inset: 18% 0 28%;
+}
+
+.pt-tunnel__streaks span {
+  position: absolute;
+  top: calc(8% + (var(--i) * 7.2%));
+  left: -20%;
+  width: calc(80px + (var(--i) * 12px));
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(139, 231, 253, 0.55), transparent);
+  opacity: 0.35;
+  animation: pt-streak var(--pt-duration) linear both;
+  animation-delay: calc(var(--i) * -120ms);
+}
+
+.pt-platform {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  animation: pt-platform-phase var(--pt-duration) ease both;
+}
+
+.pt-hall__ledge {
+  position: absolute;
+  left: -100vw;
+  right: -100vw;
+  top: calc(84 * var(--s));
+  height: calc(18 * var(--s));
+  background: linear-gradient(180deg, #1c1830, #100d1c 70%, #0b0912);
+  box-shadow:
+    0 calc(6 * var(--s)) calc(18 * var(--s)) rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(139, 231, 253, 0.12);
+}
+
+.pt-hall__lamp {
+  position: absolute;
+  top: calc(100% - 3 * var(--s));
+  width: calc(52 * var(--s));
+  height: calc(5 * var(--s));
+  border-radius: calc(2 * var(--s));
+  background: linear-gradient(180deg, rgba(139, 231, 253, 0.85), rgba(121, 208, 237, 0.35));
+  box-shadow: 0 0 calc(14 * var(--s)) rgba(139, 231, 253, 0.45);
+}
+
+.pt-hall__lamp:nth-child(1) {
+  left: 12%;
+}
+.pt-hall__lamp:nth-child(2) {
+  left: 28%;
+}
+.pt-hall__lamp:nth-child(3) {
+  left: 44%;
+}
+.pt-hall__lamp:nth-child(4) {
+  left: 60%;
+}
+.pt-hall__lamp:nth-child(5) {
+  left: 76%;
+}
+
+.pt-sign {
+  position: absolute;
+  left: 50%;
+  top: calc(18 * var(--s));
+  transform: translateX(-50%);
+  width: calc(280 * var(--s));
+  height: calc(72 * var(--s));
+}
+
+.pt-sign__rod {
+  position: absolute;
+  top: 0;
+  width: calc(3 * var(--s));
+  height: calc(28 * var(--s));
+  background: linear-gradient(180deg, #4a465e, #2a2838);
+}
+
+.pt-sign__rod--l {
+  left: calc(18 * var(--s));
+}
+.pt-sign__rod--r {
+  right: calc(18 * var(--s));
+}
+
+.pt-sign__plate {
+  position: absolute;
+  left: 50%;
+  top: calc(22 * var(--s));
+  transform: translateX(-50%);
+  min-width: calc(200 * var(--s));
+  padding: calc(10 * var(--s)) calc(22 * var(--s));
+  border: calc(2 * var(--s)) solid rgba(139, 231, 253, 0.35);
+  border-radius: calc(4 * var(--s));
+  background: linear-gradient(180deg, #1a1830, #100f1e);
+  box-shadow: 0 calc(8 * var(--s)) calc(24 * var(--s)) rgba(0, 0, 0, 0.55);
+}
+
+.pt-sign__name {
+  display: block;
+  font-family: var(--font-display);
+  font-size: calc(26 * var(--s));
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-align: center;
+  color: var(--cream);
+  text-shadow: 0 0 calc(12 * var(--s)) rgba(139, 231, 253, 0.35);
+}
+
+.pt-edge {
+  position: absolute;
+  left: -100vw;
+  right: -100vw;
+  top: calc(328 * var(--s));
+  height: calc(8 * var(--s));
+  background: repeating-linear-gradient(
+    90deg,
+    #f6e6a4 0 calc(18 * var(--s)),
+    #1a1a30 calc(18 * var(--s)) calc(36 * var(--s))
+  );
+  box-shadow: 0 calc(-4 * var(--s)) calc(16 * var(--s)) rgba(246, 230, 164, 0.15);
+}
+
+.pt-floor {
+  position: absolute;
+  left: -100vw;
+  right: -100vw;
+  top: calc(336 * var(--s));
+  bottom: -100vh;
+  background: #0b0912;
+}
+
+.pt-floor__tiles {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(0deg, rgba(0, 0, 0, 0.35), transparent 40%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.03) 0 calc(48 * var(--s)),
+      transparent calc(48 * var(--s)) calc(96 * var(--s))
+    ),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.025) 0 calc(48 * var(--s)),
+      transparent calc(48 * var(--s)) calc(96 * var(--s))
+    );
+}
+
+.pt-train {
+  position: absolute;
+  left: calc(-280 * var(--s));
+  top: calc(115 * var(--s));
+  display: flex;
+  gap: calc(10 * var(--s));
+  height: calc(200 * var(--s));
+  z-index: 2;
+  animation: pt-train-ride var(--pt-duration) cubic-bezier(0.22, 0.85, 0.28, 1) both;
+}
+
+.pt-car {
+  flex: none;
+  width: calc(180 * var(--s));
+  height: 100%;
+  border-radius: calc(6 * var(--s)) calc(6 * var(--s)) calc(4 * var(--s)) calc(4 * var(--s));
+  background: linear-gradient(180deg, #3a3f58 0 12%, #1c1f2e 12% 88%, #10121c 88%);
+  box-shadow:
+    inset 0 calc(2 * var(--s)) 0 rgba(139, 231, 253, 0.12),
+    0 calc(8 * var(--s)) calc(24 * var(--s)) rgba(0, 0, 0, 0.45);
+}
+
+.pt-car--blank {
+  opacity: 0.55;
+}
+
+.pt-car--lit .pt-car__window {
+  position: absolute;
+  left: calc(16 * var(--s));
+  right: calc(16 * var(--s));
+  top: calc(36 * var(--s));
+  height: calc(72 * var(--s));
+  border-radius: calc(4 * var(--s));
+  background: linear-gradient(180deg, rgba(139, 231, 253, 0.22), rgba(121, 208, 237, 0.08));
+  box-shadow:
+    inset 0 0 calc(20 * var(--s)) rgba(139, 231, 253, 0.25),
+    0 0 calc(16 * var(--s)) rgba(139, 231, 253, 0.15);
+}
+
+.pt-caption {
+  position: absolute;
+  left: 50%;
+  bottom: calc(28 * var(--s));
+  transform: translateX(-50%);
+  margin: 0;
+  font-size: calc(11 * var(--s));
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(195, 212, 222, 0.55);
+  animation: pt-caption-phase var(--pt-duration) ease both;
+}
+
+.page-transition.is-to-map .pt-train {
+  animation-name: pt-train-depart;
+}
+
+.page-transition.is-to-map .pt-tunnel {
+  animation-name: pt-tunnel-phase-reverse;
+}
+
+.page-transition.is-to-map .pt-platform {
+  animation-name: pt-platform-phase-reverse;
+}
+
+@keyframes pt-overlay-fade {
+  0%,
+  72% {
+    opacity: 1;
+  }
+  88%,
+  100% {
+    opacity: 0;
+    pointer-events: none;
+  }
+}
+
+.page-transition.is-to-map {
+  animation-name: pt-overlay-fade-reverse;
+}
+
+@keyframes pt-overlay-fade-reverse {
+  0%,
+  12% {
+    opacity: 0;
+  }
+  28%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes pt-tunnel-phase {
+  0%,
+  38% {
+    opacity: 1;
+  }
+  52%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes pt-tunnel-phase-reverse {
+  0%,
+  48% {
+    opacity: 0;
+  }
+  62%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes pt-platform-phase {
+  0%,
+  40% {
+    opacity: 0;
+  }
+  54%,
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes pt-platform-phase-reverse {
+  0%,
+  38% {
+    opacity: 1;
+  }
+  52%,
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes pt-streak {
+  0% {
+    transform: translateX(0);
+    opacity: 0;
+  }
+  8% {
+    opacity: 0.5;
+  }
+  38% {
+    transform: translateX(140%);
+    opacity: 0.35;
+  }
+  100% {
+    transform: translateX(140%);
+    opacity: 0;
+  }
+}
+
+@keyframes pt-train-ride {
+  0% {
+    transform: translateX(calc(420 * var(--s)));
+    opacity: 0.35;
+  }
+  42% {
+    transform: translateX(calc(420 * var(--s)));
+    opacity: 0.35;
+  }
+  68% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes pt-train-depart {
+  0% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  32% {
+    transform: translateX(calc(-480 * var(--s)));
+    opacity: 0.4;
+  }
+  100% {
+    transform: translateX(calc(-480 * var(--s)));
+    opacity: 0.4;
+  }
+}
+
+@keyframes pt-caption-phase {
+  0%,
+  42% {
+    opacity: 0;
+  }
+  50%,
+  78% {
+    opacity: 1;
+  }
+  88%,
+  100% {
+    opacity: 0;
+  }
+}
+
+.project-station.is-under-overlay {
+  opacity: 0;
+}
+
+.project-station.is-revealed {
+  animation: pt-project-reveal 520ms ease both;
+}
+
+.ps-train--settled,
+.ps-train:not(.ps-train--arrive):not(.is-shift-out):not(.is-shift-in) {
+  animation: none;
+}
+
+/* Project → project: roll the same train along the platform */
+.ps-train.is-shift-out.is-shift-next {
+  animation: ps-shift-out-next 560ms cubic-bezier(0.4, 0.05, 0.3, 1) forwards;
+}
+
+.ps-train.is-shift-out.is-shift-prev {
+  animation: ps-shift-out-prev 560ms cubic-bezier(0.4, 0.05, 0.3, 1) forwards;
+}
+
+.ps-train.is-shift-in.is-shift-next {
+  animation: ps-shift-in-next 620ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+.ps-train.is-shift-in.is-shift-prev {
+  animation: ps-shift-in-prev 620ms cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+@keyframes ps-shift-out-next {
+  from {
+    transform: none;
+    opacity: 1;
+  }
+  to {
+    transform: translateX(calc(-340 * var(--s)));
+    opacity: 0.35;
+  }
+}
+
+@keyframes ps-shift-out-prev {
+  from {
+    transform: none;
+    opacity: 1;
+  }
+  to {
+    transform: translateX(calc(340 * var(--s)));
+    opacity: 0.35;
+  }
+}
+
+@keyframes ps-shift-in-next {
+  from {
+    transform: translateX(calc(340 * var(--s)));
+    opacity: 0.35;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@keyframes ps-shift-in-prev {
+  from {
+    transform: translateX(calc(-340 * var(--s)));
+    opacity: 0.35;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.project-station.is-shift-out .ps-sign__plate,
+.project-station.is-shift-out .ps-visit,
+.project-station.is-shift-out .ps-display {
+  animation: ps-chrome-out 420ms ease forwards;
+}
+
+.project-station.is-shift-in .ps-sign__plate,
+.project-station.is-shift-in .ps-visit,
+.project-station.is-shift-in .ps-display {
+  animation: ps-chrome-in 520ms ease both;
+}
+
+@keyframes ps-chrome-out {
+  from {
+    opacity: 1;
+    filter: blur(0);
+  }
+  to {
+    opacity: 0;
+    filter: blur(2px);
+  }
+}
+
+@keyframes ps-chrome-in {
+  from {
+    opacity: 0;
+    filter: blur(2px);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+@keyframes pt-project-reveal {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transition {
+    animation: none;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .project-station.is-revealed {
+    animation: none;
+  }
+
+  .ps-train.is-shift-out.is-shift-next,
+  .ps-train.is-shift-out.is-shift-prev,
+  .ps-train.is-shift-in.is-shift-next,
+  .ps-train.is-shift-in.is-shift-prev,
+  .project-station.is-shift-out .ps-sign__plate,
+  .project-station.is-shift-out .ps-visit,
+  .project-station.is-shift-out .ps-display,
+  .project-station.is-shift-in .ps-sign__plate,
+  .project-station.is-shift-in .ps-visit,
+  .project-station.is-shift-in .ps-display {
+    animation: none;
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/* Project station: standing on the platform as the train pulls in     */
+/* ------------------------------------------------------------------ */
+
+/*
+ * Laid out in the same 960x540 design frame as the map. The hall, pit,
+ * platform edge and floor bleed past the frame so wide viewports still read
+ * as one continuous station; the frame itself carries the composition.
+ * Palette: the same neon-on-void colours as the map and station boards
+ * (#0d0a15 / #100f1e / #1a1a30, cyan / coral / cream).
+ */
+.project-station {
+  --coral: #f3b4a4;
+  --coral-deep: #e2988e;
+  --cyan: #79d0ed;
+  --cyan-bright: #8be7fd;
+  --peach: #fbd5b7;
+  --cream: #f8ecbd;
+  --yellow: #f6e6a4;
+  --lavender: #bdb9cc;
+  --car-roof: #3a3f58;
+  --car-body: #1c1f2e;
+  --car-shade: #10121c;
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  overflow: hidden;
+  background: #0d0a15;
+  font-family: var(--font-mono);
+  color: #c3d4de;
+  pointer-events: auto;
+  user-select: text;
+}
+
+.project-station button,
+.project-station a {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.project-station button:disabled {
+  cursor: default;
+}
+
+.project-station :is(button, a):focus-visible {
+  outline: 1px solid rgba(255, 255, 255, 0.55);
+  outline-offset: 2px;
+}
+
+.ps-frame {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: calc(960 * var(--s));
+  height: calc(540 * var(--s));
+  transform: translate(-50%, -50%);
+}
+
+/* Hall: back wall with faint trusses, and the ceiling ledge carrying the lights */
+.ps-hall {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.ps-hall__wall {
+  position: absolute;
+  left: -100vw;
+  right: -100vw;
+  bottom: calc(100% - 115 * var(--s));
+  height: calc(115 * var(--s) + 100vh);
+  background:
+    repeating-linear-gradient(
+      64deg,
+      transparent 0 calc(126 * var(--s)),
+      rgba(139, 231, 253, 0.09) calc(126 * var(--s)) calc(127.4 * var(--s))
+    ),
+    repeating-linear-gradient(
+      -64deg,
+      transparent 0 calc(126 * var(--s)),
+      rgba(139, 231, 253, 0.07) calc(126 * var(--s)) calc(127.4 * var(--s))
+    ),
+    linear-gradient(0deg, #141022 0, #100d1c calc(60 * var(--s)), #0d0a15 calc(220 * var(--s)));
+}
+
+.ps-hall__ledge {
+  position: absolute;
+  left: -100vw;
+  right: -100vw;
+  top: calc(84 * var(--s));
+  height: calc(18 * var(--s));
+  background: linear-gradient(180deg, #1c1830, #100d1c 70%, #0b0912);
+  box-shadow:
+    0 calc(6 * var(--s)) calc(18 * var(--s)) rgba(0, 0, 0, 0.7),
+    0 calc(2 * var(--s)) calc(16 * var(--s)) rgba(121, 208, 237, 0.08),
+    inset 0 1px 0 rgba(139, 231, 253, 0.12);
+}
+
+/* Five strip lights on the underside of the ledge, spaced as in the reference */
+.ps-hall__lamp {
+  position: absolute;
+  top: calc(100% - 3 * var(--s));
+  left: 50%;
+  width: calc(104 * var(--s));
+  height: calc(7 * var(--s));
+  border-radius: 0 0 calc(3 * var(--s)) calc(3 * var(--s));
+  background: linear-gradient(180deg, #fff4de, var(--peach) 55%, #e6a98f);
+  box-shadow:
+    0 0 calc(10 * var(--s)) rgba(251, 213, 183, 0.95),
+    0 calc(12 * var(--s)) calc(28 * var(--s)) rgba(243, 180, 164, 0.38),
+    0 calc(34 * var(--s)) calc(70 * var(--s)) rgba(243, 180, 164, 0.18);
+  transform: translateX(calc(-50% + var(--dx) * var(--s))) skewX(-8deg);
+}
+
+.ps-hall__lamp:nth-child(1) {
+  --dx: -354;
+}
+
+.ps-hall__lamp:nth-child(2) {
+  --dx: -159;
+}
+
+.ps-hall__lamp:nth-child(3) {
+  --dx: 14;
+}
+
+.ps-hall__lamp:nth-child(4) {
+  --dx: 169;
+}
+
+.ps-hall__lamp:nth-child(5) {
+  --dx: 352;
+}
+
+/* Top bar: previous / next controls and the hanging station sign */
+.ps-top {
+  position: absolute;
+  left: calc(22 * var(--s));
+  right: calc(22 * var(--s));
+  top: calc(26 * var(--s));
+  height: calc(26 * var(--s));
+  z-index: 6;
+}
+
+.ps-nav {
+  position: absolute;
+  top: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: calc(8 * var(--s));
+  height: calc(26 * var(--s));
+  padding: 0 calc(13 * var(--s));
+  border: calc(1.5 * var(--s)) solid;
+  border-radius: calc(4 * var(--s));
+  background: rgba(8, 6, 16, 0.94);
+  font-size: calc(10.5 * var(--s));
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 160ms ease, box-shadow 160ms ease, color 160ms ease;
+}
+
+.ps-nav__arrow {
+  width: calc(14 * var(--s));
+  height: calc(14 * var(--s));
+}
+
+.ps-nav__arrow--back {
+  transform: scaleX(-1);
+}
+
+.ps-nav--prev {
+  left: 0;
+  color: var(--coral);
+  border-color: rgba(243, 180, 164, 0.85);
+  box-shadow: 0 0 calc(10 * var(--s)) rgba(243, 180, 164, 0.22);
+}
+
+.ps-nav--next {
+  right: 0;
+  color: var(--cyan-bright);
+  border-color: rgba(121, 208, 237, 0.85);
+  box-shadow: 0 0 calc(10 * var(--s)) rgba(121, 208, 237, 0.25);
+}
+
+.ps-nav--prev:hover:not(:disabled):not([aria-disabled='true']) {
+  background: rgba(70, 40, 44, 0.95);
+  color: #ffe6de;
+  box-shadow: 0 0 calc(16 * var(--s)) rgba(243, 180, 164, 0.5);
+}
+
+.ps-nav--next:hover:not(:disabled):not([aria-disabled='true']) {
+  background: rgba(28, 48, 70, 0.95);
+  color: #d5f6ff;
+  box-shadow: 0 0 calc(16 * var(--s)) rgba(121, 208, 237, 0.5);
+}
+
+/* Mid-shift: keep colour, just block clicks */
+.ps-nav:disabled:not(.is-end),
+.ps-nav[aria-disabled='true']:not(.is-end) {
+  opacity: 0.9;
+  cursor: default;
+  pointer-events: none;
+}
+
+/* First / last project: no neighbour in that direction */
+.ps-nav.is-end {
+  color: #5c5868;
+  border-color: rgba(92, 88, 104, 0.5);
+  background: rgba(12, 10, 18, 0.55);
+  box-shadow: none;
+  opacity: 0.5;
+  cursor: default;
+}
+
+.ps-nav--prev.is-end {
+  color: #6a5a5e;
+  border-color: rgba(106, 90, 94, 0.4);
+}
+
+.ps-nav--next.is-end {
+  color: #4f5a68;
+  border-color: rgba(79, 90, 104, 0.4);
+}
+
+.ps-sign {
+  position: absolute;
+  left: 50%;
+  top: calc(-26 * var(--s));
+  width: max-content;
+  min-width: calc(244 * var(--s));
+  max-width: 100%;
+  transform: translateX(-50%);
+}
+
+.ps-sign__rod {
+  position: absolute;
+  top: 0;
+  width: calc(2 * var(--s));
+  height: calc(26 * var(--s));
+  background: linear-gradient(180deg, #6a6484, #3a3550);
+}
+
+.ps-sign__rod::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: calc(5 * var(--s));
+  height: calc(5 * var(--s));
+  border-radius: 50%;
+  background: var(--cream);
+  transform: translate(-50%, -30%);
+  box-shadow: 0 0 calc(8 * var(--s)) var(--cream);
+}
+
+.ps-sign__rod--l {
+  left: calc(22 * var(--s));
+}
+
+.ps-sign__rod--r {
+  right: calc(22 * var(--s));
+}
+
+.ps-sign__plate {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: calc(44 * var(--s));
+  margin-top: calc(26 * var(--s));
+  padding: 0 calc(28 * var(--s));
+  border: calc(1.5 * var(--s)) solid rgba(248, 236, 189, 0.88);
+  border-radius: calc(4 * var(--s));
+  background: linear-gradient(180deg, #1a1a30, #0d0a15);
+  box-shadow:
+    0 0 calc(24 * var(--s)) rgba(248, 236, 189, 0.32),
+    0 0 calc(48 * var(--s)) rgba(248, 236, 189, 0.12),
+    0 calc(10 * var(--s)) calc(24 * var(--s)) rgba(0, 0, 0, 0.6),
+    inset 0 0 calc(18 * var(--s)) rgba(248, 236, 189, 0.06);
+}
+
+/* Neon tubes down both ends of the sign */
+.ps-sign__plate::before,
+.ps-sign__plate::after {
+  content: '';
+  position: absolute;
+  top: calc(6 * var(--s));
+  bottom: calc(6 * var(--s));
+  width: calc(2 * var(--s));
+  border-radius: calc(1 * var(--s));
+  background: var(--cream);
+  box-shadow: 0 0 calc(10 * var(--s)) var(--cream), 0 0 calc(22 * var(--s)) rgba(248, 236, 189, 0.5);
+}
+
+.ps-sign__plate::before {
+  left: calc(-1.5 * var(--s));
+}
+
+.ps-sign__plate::after {
+  right: calc(-1.5 * var(--s));
+}
+
+.ps-sign__name {
+  margin: 0;
+  max-width: 100%;
+  font-size: calc(21 * var(--s));
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.22em;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--cream);
+  text-shadow: 0 0 calc(14 * var(--s)) rgba(248, 236, 189, 0.75), 0 0 calc(28 * var(--s)) rgba(248, 236, 189, 0.28);
+  /* Optical center: letter-spacing otherwise pushes the last glyph right. */
+  padding-left: 0.22em;
+}
+
+.ps-back {
+  position: absolute;
+  left: 50%;
+  top: calc(74 * var(--s));
+  z-index: 6;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-size: calc(10 * var(--s));
+  font-weight: 500;
+  line-height: 1;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  text-decoration: none;
+  color: var(--lavender);
+  opacity: 0.7;
+  transform: translateX(-50%);
+  cursor: pointer;
+  transition: color 160ms ease, opacity 160ms ease;
+}
+
+.ps-back:hover {
+  color: #f7f1f8;
+  opacity: 1;
+}
+
+.ps-back[aria-disabled='true'] {
+  pointer-events: none;
+  opacity: 0.45;
+}
+
+/* The train: blank cars bracket the three that carry copy, so it runs off both edges */
+.ps-train {
+  position: absolute;
+  left: calc(-308 * var(--s));
+  top: calc(115 * var(--s));
+  height: calc(214 * var(--s));
+  z-index: 3;
+}
+
+/* Learn More entry only — not applied during Previous / Next shifts */
+.ps-train--arrive {
+  animation: ps-arrive 3s cubic-bezier(0.2, 0.8, 0.25, 1) both;
+}
+
+.ps-train__cars {
+  display: flex;
+  gap: calc(12 * var(--s));
+  height: 100%;
+}
+
+.ps-car {
+  position: relative;
+  flex: none;
+  width: calc(310 * var(--s));
+  height: 100%;
+}
+
+/* Coupling bellows in the gap between cars */
+.ps-car + .ps-car::before {
+  content: '';
+  position: absolute;
+  right: 100%;
+  top: calc(60 * var(--s));
+  width: calc(12 * var(--s));
+  height: calc(110 * var(--s));
+  background: linear-gradient(90deg, #14121f, #221f33, #14121f);
+}
+
+.ps-car__shell {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: calc(24 * var(--s)) calc(24 * var(--s)) calc(6 * var(--s)) calc(6 * var(--s));
+  background: linear-gradient(
+    180deg,
+    #4a5068 0,
+    var(--car-roof) calc(10 * var(--s)),
+    #2c3148 calc(27 * var(--s)),
+    #1a1e2e calc(29 * var(--s)),
+    var(--car-body) 40%,
+    #151824 75%,
+    var(--car-shade) 100%
+  );
+  box-shadow:
+    inset 0 calc(1.5 * var(--s)) 0 rgba(139, 231, 253, 0.22),
+    inset calc(14 * var(--s)) 0 calc(22 * var(--s)) calc(-12 * var(--s)) rgba(6, 6, 12, 0.7),
+    inset calc(-14 * var(--s)) 0 calc(22 * var(--s)) calc(-12 * var(--s)) rgba(6, 6, 12, 0.7),
+    inset 0 calc(-2 * var(--s)) 0 rgba(6, 6, 12, 0.55),
+    0 0 calc(18 * var(--s)) rgba(121, 208, 237, 0.08),
+    0 calc(14 * var(--s)) calc(26 * var(--s)) rgba(0, 0, 0, 0.65);
+}
+
+.ps-car--blank .ps-car__shell {
+  filter: brightness(0.88);
+}
+
+.ps-car__vent {
+  position: absolute;
+  left: 50%;
+  top: calc(7 * var(--s));
+  width: calc(32 * var(--s));
+  height: calc(5 * var(--s));
+  border-radius: 0 0 calc(2 * var(--s)) calc(2 * var(--s));
+  background: var(--car-body);
+  transform: translateX(-50%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.ps-car__roofline {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(28 * var(--s));
+  height: calc(2 * var(--s));
+  background: rgba(14, 15, 22, 0.4);
+  box-shadow: 0 1px 0 rgba(247, 241, 248, 0.1);
+}
+
+/* Door: lit frame, lighter panel, dark glass in the upper half */
+.ps-car__door {
+  --door: var(--coral);
+  position: absolute;
+  left: calc(12 * var(--s));
+  top: calc(36 * var(--s));
+  width: calc(48 * var(--s));
+  height: calc(168 * var(--s));
+  border-radius: calc(8 * var(--s)) calc(8 * var(--s)) calc(3 * var(--s)) calc(3 * var(--s));
+  background: var(--door);
+  box-shadow:
+    0 0 calc(16 * var(--s)) color-mix(in srgb, var(--door) 60%, transparent),
+    0 0 calc(40 * var(--s)) color-mix(in srgb, var(--door) 25%, transparent);
+}
+
+.ps-car--2 .ps-car__door {
+  --door: var(--cyan);
+}
+
+.ps-car__door-panel {
+  position: absolute;
+  inset: calc(5 * var(--s));
+  border-radius: calc(6 * var(--s)) calc(6 * var(--s)) calc(2 * var(--s)) calc(2 * var(--s));
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--door) 70%, #fff) 0,
+    color-mix(in srgb, var(--door) 88%, #fff) 45%,
+    color-mix(in srgb, var(--door) 70%, #3a3550) 100%
+  );
+}
+
+.ps-car__door-glass {
+  position: absolute;
+  left: calc(9 * var(--s));
+  right: calc(9 * var(--s));
+  top: calc(10 * var(--s));
+  height: calc(80 * var(--s));
+  border-radius: calc(4 * var(--s));
+  background: linear-gradient(180deg, #1a1830, #0e0f16);
+  box-shadow: inset 0 0 calc(10 * var(--s)) rgba(0, 0, 0, 0.7), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+/* Passenger window carrying the copy — fills most of the car face so type can sit larger */
+.ps-car__window {
+  position: absolute;
+  left: calc(68 * var(--s));
+  top: calc(36 * var(--s));
+  width: calc(230 * var(--s));
+  height: calc(158 * var(--s));
+  display: flex;
+  align-items: center;
+  padding: calc(9 * var(--s)) calc(11 * var(--s));
+  border: calc(1.2 * var(--s)) solid rgba(139, 231, 253, 0.62);
+  border-radius: calc(6 * var(--s));
+  background: linear-gradient(170deg, #1a1a30, #100f1e 55%, #0a0812);
+  box-shadow:
+    inset 0 0 calc(22 * var(--s)) rgba(0, 0, 0, 0.7),
+    inset 0 calc(18 * var(--s)) calc(28 * var(--s)) rgba(139, 231, 253, 0.05),
+    0 0 calc(16 * var(--s)) rgba(121, 208, 237, 0.22);
+}
+
+.ps-car__window p {
+  margin: 0;
+  font-size: calc(10.2 * var(--s));
+  line-height: calc(14.2 * var(--s));
+  letter-spacing: 0.005em;
+  color: #c4e2ec;
+}
+
+.ps-car__blank-window {
+  position: absolute;
+  left: calc(22 * var(--s));
+  right: calc(12 * var(--s));
+  top: calc(36 * var(--s));
+  height: calc(158 * var(--s));
+  border: calc(1.2 * var(--s)) solid rgba(121, 208, 237, 0.22);
+  border-radius: calc(6 * var(--s));
+  background: #0a0812;
+}
+
+/* Lit strip under the window, and the dark skirt along the car's bottom */
+.ps-car__stripe {
+  position: absolute;
+  left: calc(68 * var(--s));
+  top: calc(198 * var(--s));
+  width: calc(230 * var(--s));
+  height: calc(4 * var(--s));
+  border-radius: calc(2 * var(--s));
+  background: linear-gradient(90deg, var(--coral), var(--peach) 60%, var(--coral));
+  box-shadow: 0 0 calc(10 * var(--s)) rgba(243, 180, 164, 0.8), 0 0 calc(24 * var(--s)) rgba(243, 180, 164, 0.35);
+}
+
+.ps-car__skirt {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: calc(9 * var(--s));
+  background: linear-gradient(180deg, #181a28, #0e1018);
+}
+
+.ps-car__bogie {
+  position: absolute;
+  top: 100%;
+  width: calc(64 * var(--s));
+  height: calc(11 * var(--s));
+  border-radius: 0 0 calc(4 * var(--s)) calc(4 * var(--s));
+  background: #0e0f16;
+  box-shadow: inset 0 calc(2 * var(--s)) 0 rgba(255, 255, 255, 0.05);
+}
+
+.ps-car__bogie--l {
+  left: calc(34 * var(--s));
+}
+
+.ps-car__bogie--r {
+  right: calc(34 * var(--s));
+}
+
+/* Concourse: pit under the train, tactile edge, tiled floor receding in perspective */
+.ps-pit {
+  position: absolute;
+  left: -100vw;
+  right: -100vw;
+  top: calc(329 * var(--s));
+  height: calc(20 * var(--s));
+  z-index: 1;
+  background: linear-gradient(180deg, #05040a, #0a0810 60%, #0d0a15);
+}
+
+.ps-edge {
+  position: absolute;
+  left: -100vw;
+  right: -100vw;
+  top: calc(347 * var(--s));
+  height: calc(16 * var(--s));
+  z-index: 2;
+  background:
+    radial-gradient(circle, rgba(96, 74, 32, 0.6) 0 calc(1.1 * var(--s)), transparent calc(1.7 * var(--s))) 0 0 /
+      calc(8 * var(--s)) calc(8 * var(--s)),
+    linear-gradient(180deg, #fbf1c8 0, var(--yellow) 45%, #dcc783 100%);
+  box-shadow:
+    0 0 calc(20 * var(--s)) rgba(246, 230, 164, 0.5),
+    0 calc(3 * var(--s)) 0 #a48d4a,
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.ps-floor {
+  position: absolute;
+  left: -100vw;
+  right: -100vw;
+  top: calc(363 * var(--s));
+  height: calc(177 * var(--s) + 100vh);
+  z-index: 1;
+  overflow: hidden;
+  background: linear-gradient(180deg, #16122a 0, #100d1c calc(70 * var(--s)), #0d0a15 calc(240 * var(--s)));
+}
+
+.ps-floor__tiles {
+  position: absolute;
+  left: -40%;
+  right: -40%;
+  top: 0;
+  height: 320%;
+  background:
+    repeating-linear-gradient(90deg, rgba(121, 208, 237, 0.08) 0 calc(1.2 * var(--s)), transparent calc(1.2 * var(--s)) calc(64 * var(--s))),
+    repeating-linear-gradient(180deg, rgba(121, 208, 237, 0.06) 0 calc(1.2 * var(--s)), transparent calc(1.2 * var(--s)) calc(48 * var(--s)));
+  transform-origin: 50% 0;
+  transform: perspective(calc(520 * var(--s))) rotateX(56deg);
+  -webkit-mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.35) 60%, transparent);
+  mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.35) 60%, transparent);
+}
+
+/*
+ * Bench on the concourse. The visit control is neon type on the seat
+ * face, riding the coral light strip rather than a second metal block.
+ */
+.ps-kiosk {
+  position: absolute;
+  left: calc(20 * var(--s));
+  top: calc(372 * var(--s));
+  width: calc(300 * var(--s));
+  height: calc(113 * var(--s));
+  z-index: 4;
+}
+
+.ps-bench {
+  position: absolute;
+  left: 0;
+  top: calc(38 * var(--s));
+  width: calc(300 * var(--s));
+  height: calc(75 * var(--s));
+}
+
+.ps-bench::after {
+  content: '';
+  position: absolute;
+  left: -10%;
+  right: -10%;
+  top: 60%;
+  height: 70%;
+  z-index: -1;
+  background: radial-gradient(ellipse at 50% 30%, rgba(243, 180, 164, 0.16), transparent 70%);
+}
+
+.ps-bench__top {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: calc(300 * var(--s));
+  height: calc(15 * var(--s));
+  clip-path: polygon(calc(20 * var(--s)) 0, 100% 0, calc(100% - 20 * var(--s)) 100%, 0 100%);
+  background: linear-gradient(90deg, #2a2a40, #34344c);
+}
+
+.ps-bench__front {
+  position: absolute;
+  left: 0;
+  top: calc(15 * var(--s));
+  width: calc(280 * var(--s));
+  height: calc(60 * var(--s));
+  background: linear-gradient(180deg, #1e1e30, #141422);
+  box-shadow: 0 calc(16 * var(--s)) calc(28 * var(--s)) rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(121, 208, 237, 0.08);
+}
+
+.ps-bench__side {
+  position: absolute;
+  left: calc(280 * var(--s));
+  top: 0;
+  width: calc(20 * var(--s));
+  height: calc(75 * var(--s));
+  clip-path: polygon(0 calc(15 * var(--s)), 100% 0, 100% calc(60 * var(--s)), 0 100%);
+  background: #101018;
+}
+
+.ps-bench__light {
+  position: absolute;
+  left: calc(18 * var(--s));
+  top: calc(40 * var(--s));
+  width: calc(244 * var(--s));
+  height: calc(4 * var(--s));
+  border-radius: calc(2 * var(--s));
+  background: linear-gradient(90deg, var(--coral-deep), var(--coral) 30%, var(--peach) 55%, var(--coral));
+  box-shadow: 0 0 calc(10 * var(--s)) rgba(243, 180, 164, 0.85), 0 0 calc(26 * var(--s)) rgba(243, 180, 164, 0.35);
+}
+
+.ps-visit {
+  position: absolute;
+  left: 0;
+  top: calc(54 * var(--s));
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: calc(6 * var(--s));
+  width: calc(280 * var(--s));
+  height: calc(22 * var(--s));
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--coral);
+  font-size: calc(10 * var(--s));
+  font-weight: 500;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  text-shadow: 0 0 calc(10 * var(--s)) rgba(243, 180, 164, 0.45);
+  transition: color 160ms ease, text-shadow 160ms ease;
+}
+
+.ps-visit svg {
+  width: calc(11 * var(--s));
+  height: calc(11 * var(--s));
+  flex: none;
+}
+
+.ps-visit:hover {
+  color: #ffe6de;
+  text-shadow: 0 0 calc(16 * var(--s)) rgba(243, 180, 164, 0.8);
+}
+
+.ps-kiosk:has(.ps-visit:hover) .ps-bench__light {
+  box-shadow: 0 0 calc(14 * var(--s)) rgba(243, 180, 164, 1), 0 0 calc(32 * var(--s)) rgba(243, 180, 164, 0.5);
+}
+
+/*
+ * Stills board: a dark neon kiosk on the platform. Anchored to the
+ * platform so it can grow upward over the train when a still is hovered.
+ * Closed height fits three 16:9 thumbs; open height adds a 16:9 hero above
+ * them without shrinking the row below.
+ */
+.ps-display {
+  position: absolute;
+  left: calc(430 * var(--s));
+  bottom: calc(40 * var(--s));
+  width: calc(510 * var(--s));
+  height: calc(136 * var(--s));
+  z-index: 5;
+  transition: height 320ms cubic-bezier(0.22, 0.72, 0.2, 1);
+}
+
+.ps-display.is-open {
+  height: calc(404 * var(--s));
+  z-index: 8;
+}
+
+.ps-display::after {
+  content: '';
+  position: absolute;
+  left: 4%;
+  right: 4%;
+  top: 80%;
+  height: 60%;
+  z-index: -1;
+  background: radial-gradient(ellipse at 50% 20%, rgba(139, 231, 253, 0.2), transparent 70%);
+}
+
+.ps-display__frame {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(10 * var(--s));
+  background: linear-gradient(180deg, #222238, #161624 60%, #12121c);
+  box-shadow:
+    0 0 0 calc(1.2 * var(--s)) rgba(121, 208, 237, 0.28),
+    0 0 calc(22 * var(--s)) rgba(121, 208, 237, 0.16),
+    0 calc(7 * var(--s)) 0 #0a0912,
+    0 calc(20 * var(--s)) calc(34 * var(--s)) rgba(0, 0, 0, 0.65),
+    inset 0 calc(1.5 * var(--s)) 0 rgba(139, 231, 253, 0.12);
+  transition: box-shadow 320ms ease;
+}
+
+.ps-display.is-open .ps-display__frame {
+  box-shadow:
+    0 0 0 calc(1.2 * var(--s)) rgba(139, 231, 253, 0.5),
+    0 0 calc(28 * var(--s)) rgba(121, 208, 237, 0.28),
+    0 calc(7 * var(--s)) 0 #0a0912,
+    0 calc(20 * var(--s)) calc(34 * var(--s)) rgba(0, 0, 0, 0.7),
+    inset 0 calc(1.5 * var(--s)) 0 rgba(139, 231, 253, 0.18);
+}
+
+.ps-display__screen {
+  position: absolute;
+  inset: calc(9 * var(--s));
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: calc(10 * var(--s)) calc(10 * var(--s)) calc(8 * var(--s));
+  border-radius: calc(6 * var(--s));
+  background: linear-gradient(180deg, #100f1e, #0a0812);
+  box-shadow: inset 0 0 calc(24 * var(--s)) rgba(0, 0, 0, 0.7), inset 0 0 0 1px rgba(121, 208, 237, 0.18);
+}
+
+.ps-display__hero {
+  flex: none;
+  width: 100%;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: calc(6 * var(--s));
+  transition: opacity 200ms ease;
+}
+
+.ps-display.is-open .ps-display__screen {
+  gap: calc(8 * var(--s));
+}
+
+.ps-display.is-open .ps-display__hero {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.ps-display__images {
+  position: relative;
+  flex: none;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: calc(10 * var(--s));
+}
+
+.ps-display__thumb {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: calc(6 * var(--s));
+}
+
+.ps-display__still {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  border: calc(1.2 * var(--s)) solid rgba(121, 208, 237, 0.28);
+  border-radius: calc(6 * var(--s));
+  object-fit: cover;
+  background: #100f1e;
+  box-shadow: inset 0 0 calc(14 * var(--s)) rgba(0, 0, 0, 0.5);
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.ps-display__thumb.is-active .ps-display__still,
+.ps-display__hero-still {
+  border-color: rgba(139, 231, 253, 0.7);
+  box-shadow: inset 0 0 calc(14 * var(--s)) rgba(0, 0, 0, 0.45), 0 0 calc(12 * var(--s)) rgba(121, 208, 237, 0.28);
+}
+
+/* Placeholder stills: quiet abstract scenes in the site palette until real images land */
+.ps-display__slot--1 {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(243, 180, 164, 0.3), transparent 32%),
+    linear-gradient(0deg, rgba(121, 208, 237, 0.14), transparent 40%),
+    linear-gradient(160deg, #1a1a30, #0d0a15);
+}
+
+.ps-display__slot--2 {
+  background:
+    linear-gradient(64deg, transparent 44%, rgba(139, 231, 253, 0.28) 45% 49%, transparent 50%),
+    radial-gradient(circle at 36% 60%, rgba(121, 208, 237, 0.2), transparent 36%),
+    linear-gradient(160deg, #1a1a30, #0d0a15);
+}
+
+.ps-display__slot--3 {
+  background:
+    radial-gradient(circle at 70% 34%, rgba(248, 236, 189, 0.85) 0 calc(7 * var(--s)), transparent calc(8 * var(--s))),
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(9 * var(--s)),
+      rgba(58, 48, 82, 0.8) calc(9 * var(--s)) calc(16 * var(--s)),
+      transparent calc(16 * var(--s)) calc(22 * var(--s)),
+      rgba(58, 48, 82, 0.6) calc(22 * var(--s)) calc(31 * var(--s))
+    ),
+    linear-gradient(0deg, #14111f 0 32%, transparent 60%),
+    linear-gradient(160deg, #1a1a30, #0d0a15);
+}
+
+.ps-display__dots {
+  position: relative;
+  flex: none;
+  display: flex;
+  justify-content: center;
+  gap: calc(6 * var(--s));
+  margin-top: calc(6 * var(--s));
+}
+
+.ps-display.is-open .ps-display__dots {
+  margin-top: 0;
+}
+
+.ps-display__dots span {
+  width: calc(5 * var(--s));
+  height: calc(5 * var(--s));
+  border-radius: 50%;
+  background: #2a2840;
+}
+
+.ps-display__dots .is-current {
+  width: calc(9 * var(--s));
+  border-radius: calc(3 * var(--s));
+  background: var(--coral);
+  box-shadow: 0 0 calc(8 * var(--s)) rgba(243, 180, 164, 0.8);
+}
+
+@keyframes ps-arrive {
+  from {
+    transform: translateX(calc(260 * var(--s)));
+    opacity: 0.5;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ps-train--arrive {
+    animation: none;
+  }
+
+  .ps-display,
+  .ps-display__hero,
+  .ps-display__still {
+    transition: none;
+  }
+}

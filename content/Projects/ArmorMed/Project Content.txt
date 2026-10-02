@@ -1,0 +1,13 @@
+##Title: ArmorMed
+##Subtitle: Using pose estimation to measure range of motion
+
+##Category: Technology in Medicine
+
+##Train 1: Traditional joint range of motion (ROM) measurement requires in-person visits and relies on manual goniometers, which often yield inconsistent results. To address this, I aimed to develop a standardized, accessible method for independent patient use.
+
+##Train 2: ArmorMed (Automated Range of Motion Reporter) is a web app that tracks upper-extremity ROM. Users upload short videos of prescribed movements, and the platform uses pose-estimation models to automatically compute their joint angles and ROM metrics.
+
+##Train 3: By providing standardized, remote assessments, ARMOR-Med overcomes the limitations of manual tracking. This tool facilitates remote monitoring and empowers patients to actively manage their rehabilitation after upper-extremity injuries or surgeries.
+
+##Button Name: "Visit ArmorMed"
+##Button Link: https://armormedicine.com/

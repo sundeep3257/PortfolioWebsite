@@ -1,0 +1,13 @@
+##Title: Twenty-Something Year Old Journalist
+##Subtitle: A commissioned online blog
+
+##Category: Creative Projects
+
+##Train 1: This project was my first fully creative web design and development effort outside of academic research. Building a public-facing website from the ground up challenged me to learn how to create a polished, secure, and intuitive product for a nontechnical user.
+
+##Train 2: The website functions as a dynamic online blog where the author can publish and manage content through a secure administrator interface. After logging in, the author can create, edit, and publish posts by simply entering text and images, while the backend handles storage, formatting, and display.
+
+##Train 3: Developing the platform gave me hands-on experience with interface design, backend development, data management, and administrative security. More importantly, it showed me how much I enjoy web development as both a creative outlet and a technical discipline.
+
+##Button Name: "Visit the Blog"
+##Button Link: https://twentysomethingyearoldjournalist.onrender.com/

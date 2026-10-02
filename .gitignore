@@ -1,0 +1,10 @@
+node_modules
+dist
+*.local
+.DS_Store
+.idea
+.venv
+*.tsbuildinfo
+.env
+.env.*
+!.env.example

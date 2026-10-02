@@ -1,0 +1,10 @@
+##Title: RATLAS
+##Subtitle: A generalizable foundation model for analysis of rodent brain MRIs
+
+##Category: Technology in Medicine
+
+##Train 1: Preclinical neuroimaging studies often rely on small datasets, making it difficult to train robust AI models. I developed RATLAS to create a generalizable foundation model for rat brain MRI that can support multiple downstream tasks.
+
+##Train 2: RATLAS uses self-supervised learning to pretrain on unlabeled rat brain MRIs, then fine-tunes on small labeled datasets for tasks including segmentation, age estimation, hydrocephalus severity assessment, and quantitative morphometric analysis.
+
+##Train 3: By reducing the amount of labeled data needed for strong performance, RATLAS aims to make preclinical neuroimaging analysis more scalable, efficient, and adaptable across diverse research questions and imaging tasks.

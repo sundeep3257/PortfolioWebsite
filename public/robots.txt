@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# Prefer the canonical host; hosts should also 301 www → apex if needed.
+Sitemap: https://sundeepchakladar.com/sitemap.xml

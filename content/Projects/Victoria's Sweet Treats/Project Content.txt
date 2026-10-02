@@ -1,0 +1,13 @@
+##Title: Victoria's Sweet Treats
+##Subtitle: A commissioned website for a small business
+
+##Category: Creative Projects
+
+##Train 1: Small businesses often need polished digital storefronts without the complexity of traditional e-commerce platforms. I designed Victoria’s Sweet Treats to give a local cookie business a simple, visually distinctive online presence centered on its products.
+
+##Train 2: The website features weekly cookie selections, an intuitive ordering flow, customer reviews, and responsive pages designed around the brand’s visual identity. The experience prioritizes product photography, clear navigation, and a simple mobile-friendly interface.
+
+##Train 3: This project challenged me to balance visual design, usability, and business needs within a real client-facing product. It also strengthened my skills in front-end development, branding, and translating a client’s ideas into a cohesive digital experience.
+
+##Button Name: "Visit Victoria's Sweet Treats"
+##Button Link: https://victoriassweettreats26.com/
