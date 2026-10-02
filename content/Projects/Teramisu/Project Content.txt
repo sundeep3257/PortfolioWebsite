@@ -10,4 +10,4 @@
 ##Train 3: Beyond model development, Teramisu provides tools for preprocessing, statistical validation, and interactive 3D reconstruction of segmented anatomy. By combining the full segmentation pipeline into one application, Teramisu lowers the technical barrier to developing and evaluating custom medical imaging AI tools.
 
 ##Button Name: "Visit Teramisu"
-##Button Link: https://teramisu-website.onrender.com/
+##Button Link: https://teramisu.onrender.com/
