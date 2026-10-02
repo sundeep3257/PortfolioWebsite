@@ -20,7 +20,6 @@ export function Station({ station, onSelect, disabled = false }: StationProps) {
   const { pop, ease } = useIntroReveal()
   const markerAnim = useRef<MarkerAnimation>({ opacity: 0, scale: 0 })
   const labelRef = useRef<HTMLButtonElement>(null)
-  const startTagRef = useRef<HTMLDivElement>(null)
   const markerWindow = STATION_INTRO[station.id] ?? { start: 0.6, end: 1.2 }
   const labelWindow = LABEL_INTRO[station.id] ?? { start: 1.8, end: 2.4 }
 
@@ -46,11 +45,9 @@ export function Station({ station, onSelect, disabled = false }: StationProps) {
 
     const labelT = ease(labelWindow.start, labelWindow.end)
     applyReveal(labelRef.current, labelT, 14)
-    applyReveal(startTagRef.current, labelT, 10)
   })
 
   const [dx, dy] = station.labelOffset
-  const showLabel = station.id !== 'start'
 
   return (
     <group position={[x, 0, z]}>
@@ -71,38 +68,28 @@ export function Station({ station, onSelect, disabled = false }: StationProps) {
         <meshBasicMaterial transparent opacity={0} depthWrite={false} />
       </mesh>
 
-      {showLabel && (
-        <Html position={[0, 0.2, 0]} zIndexRange={[20, 10]} style={{ pointerEvents: 'none' }}>
-          <button
-            ref={labelRef}
-            type="button"
-            className={`station-label station-label--${station.id}${hovered ? ' is-hovered' : ''}`}
-            style={
-              {
-                color: station.labelColor,
-                // Default design-px offset from the ring centre; the stylesheet turns it into a
-                // position and can override it (e.g. while a station's sub-network is unfolded).
-                '--label-dx': dx,
-                '--label-dy': dy,
-              } as CSSProperties
-            }
-            onClick={() => onSelect(station.id)}
-            onPointerEnter={() => setHovered(true)}
-            onPointerLeave={() => setHovered(false)}
-            aria-label={`Go to ${station.name}`}
-          >
-            {station.name}
-          </button>
-        </Html>
-      )}
-
-      {station.id === 'start' && (
-        <Html position={[0, 0.2, 0]} zIndexRange={[20, 10]} style={{ pointerEvents: 'none' }}>
-          <div ref={startTagRef} className="start-tag">
-            START HERE
-          </div>
-        </Html>
-      )}
+      <Html position={[0, 0.2, 0]} zIndexRange={[20, 10]} style={{ pointerEvents: 'none' }}>
+        <button
+          ref={labelRef}
+          type="button"
+          className={`station-label station-label--${station.id}${hovered ? ' is-hovered' : ''}`}
+          style={
+            {
+              color: station.labelColor,
+              // Default design-px offset from the ring centre; the stylesheet turns it into a
+              // position and can override it (e.g. while a station's sub-network is unfolded).
+              '--label-dx': dx,
+              '--label-dy': dy,
+            } as CSSProperties
+          }
+          onClick={() => onSelect(station.id)}
+          onPointerEnter={() => setHovered(true)}
+          onPointerLeave={() => setHovered(false)}
+          aria-label={`Go to ${station.name}`}
+        >
+          {station.name}
+        </button>
+      </Html>
     </group>
   )
 }

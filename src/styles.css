@@ -1280,25 +1280,6 @@ html[data-expanded='projects'] .station-label--projects {
   box-shadow: 0 0 14px rgba(248, 236, 189, 0.5), inset 0 0 8px rgba(248, 236, 189, 0.12);
 }
 
-/* START HERE tag */
-.start-tag {
-  position: absolute;
-  left: calc((30 + var(--ring-growth)) * var(--s));
-  top: calc(1.5 * var(--s));
-  transform: translateY(calc(-50% + var(--rise, 0px)));
-  padding: calc(3.5 * var(--s)) calc(9 * var(--s)) calc(3.5 * var(--s)) calc(13 * var(--s));
-  background: #d7d4dc;
-  color: #2a2731;
-  font-family: var(--font-mono);
-  font-weight: 500;
-  font-size: calc(8.5 * var(--s));
-  letter-spacing: 0.16em;
-  line-height: 1;
-  white-space: nowrap;
-  clip-path: polygon(0 0, 100% 0, 100% 100%, 0 100%, 7% 50%);
-  box-shadow: 0 0 calc(14 * var(--s)) rgba(230, 226, 236, 0.28);
-}
-
 /* ------------------------------------------------------------------ */
 /* Branding (lower-left)                                               */
 /* ------------------------------------------------------------------ */

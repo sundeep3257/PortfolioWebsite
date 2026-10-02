@@ -42,9 +42,9 @@ export function paintWarmupHtml(station: ExpandableStation) {
       el.getBoundingClientRect()
     })
   })
-  // Station labels / start tag also layout behind the loader so the intro
-  // and first hover do not pay for first-time text metrics.
-  document.querySelectorAll(`.station-label--${station}, .start-tag`).forEach((node) => {
+  // Station labels also layout behind the loader so the intro and first hover
+  // do not pay for first-time text metrics.
+  document.querySelectorAll(`.station-label--${station}`).forEach((node) => {
     const el = node as HTMLElement
     void el.offsetHeight
     el.getBoundingClientRect()

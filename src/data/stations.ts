@@ -49,11 +49,11 @@ const TRUNK_Z = -1.5
 export const STATIONS: Record<StationId, StationDef> = {
   start: {
     id: 'start',
-    name: 'START',
+    name: 'Start',
     position: [19.4, TRUNK_Z],
     color: COLORS.coral,
     labelColor: COLORS.coralText,
-    labelOffset: [0, 0],
+    labelOffset: [36, 2],
   },
   skills: {
     id: 'skills',
