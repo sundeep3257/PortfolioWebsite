@@ -21,6 +21,7 @@ import { applyReveal, approach, clamp01, easeOutBack, easeOutCubic, useRevealTim
 import { STATION_OVERRUN } from './SubwayMap'
 import { RibbonTrack, type RibbonAnimation } from './RibbonTrack'
 import { WorldPanel } from './WorldPanel'
+import { useWideLayout } from '../hooks/useWideLayout'
 import { ChevronLeftIcon, ChevronRightIcon, ExternalLinkIcon } from './Icons'
 
 const CAR_BODY = '#62678a'
@@ -147,6 +148,7 @@ function ArchiveCar({ index, state, selected, interactive, onSelect }: CarProps)
  */
 export function PublicationsSubNetwork() {
   const { expandedStation } = useTrainNavigationContext()
+  const { widthBoost } = useWideLayout()
   const expanded = expandedStation === 'publications'
   const root = useRef<THREE.Group>(null)
   const train = useRef<THREE.Group>(null)
@@ -255,7 +257,7 @@ export function PublicationsSubNetwork() {
       {/* Reading board hanging from an overhead gantry above the stopped car */}
       <WorldPanel
         position={[PUB_BOARD[0], 0, PUB_BOARD[1]]}
-        width={PUB_BOARD_WIDTH}
+        width={PUB_BOARD_WIDTH * widthBoost}
         anchor="bottom"
         className="pub-board world-panel--bare"
       >

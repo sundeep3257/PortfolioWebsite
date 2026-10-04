@@ -24,8 +24,19 @@
   --layout-height: calc(
     var(--vv-height) - var(--safe-t) - var(--safe-b) - var(--frame-pad-top) - var(--frame-pad-bottom)
   );
-  /* One "design pixel": the reference render is 960x540 and is contain-fitted to the layout box. */
+  /* One "design pixel": the reference render is 960x540 and is contain-fitted to the layout box.
+     JS (visualLayout) overwrites --s on short landscapes so the frame can use extra width. */
   --s: min(calc(var(--layout-width) / 960), calc(var(--layout-height) / 540));
+  --gutter-x: max(0px, calc((var(--layout-width) - 960 * var(--s)) / 2));
+  --gutter-y: max(0px, calc((var(--layout-height) - 540 * var(--s)) / 2));
+  --wide-t: 0;
+  --text-boost: 1;
+  --label-boost: 1;
+  --panel-boost: 1;
+  --width-boost: 1;
+  --car-boost: 1;
+  --brand-pull: 0px;
+  --controls-pull: 0px;
   /* Extra design px that station rings gain on screen when the camera zooms in (set by CameraRig). */
   --ring-growth: 0;
   --font-display: 'Exo 2', 'Segoe UI', sans-serif;
@@ -156,16 +167,14 @@ body {
 }
 
 /* ------------------------------------------------------------------ */
-/* Design frame: a 960x540 box (in design pixels) centred on screen    */
+/* Design frame: full layout box; 960×540 content is gutter-offset     */
 /* ------------------------------------------------------------------ */
 
 .design-frame {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: calc(960 * var(--s));
-  height: calc(540 * var(--s));
-  transform: translate(-50%, -50%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
 }
 
@@ -187,7 +196,7 @@ body {
   background: transparent;
   font-family: var(--font-mono);
   font-weight: 500;
-  font-size: calc(15.5 * var(--s));
+  font-size: calc(15.5 * var(--s) * var(--label-boost));
   letter-spacing: 0.02em;
   line-height: 1;
   white-space: nowrap;
@@ -331,8 +340,8 @@ html[data-expanded='projects'] .station-label--projects {
   padding-bottom: 9px;
   border-bottom: 1px solid rgba(121, 208, 237, 0.4);
   font-weight: 700;
-  font-size: 15px;
-  line-height: 18px;
+  font-size: calc(15px * var(--panel-boost));
+  line-height: calc(18px * var(--panel-boost));
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #8be7fd;
@@ -343,8 +352,8 @@ html[data-expanded='projects'] .station-label--projects {
   margin: 0;
   padding: 0;
   list-style: none;
-  font-size: 11.6px;
-  line-height: 18px;
+  font-size: calc(11.6px * var(--panel-boost));
+  line-height: calc(18px * var(--panel-boost));
   letter-spacing: 0.01em;
   color: #c4e2ec;
   text-shadow: var(--lift);
@@ -425,7 +434,7 @@ html[data-expanded='projects'] .station-label--projects {
   border-bottom: 1px solid rgba(121, 208, 237, 0.4);
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: calc(25px * var(--face-comp));
+  font-size: calc(25px * var(--face-comp) * var(--panel-boost));
   line-height: 1.1;
   letter-spacing: 0.04em;
   color: #8be7fd;
@@ -434,8 +443,8 @@ html[data-expanded='projects'] .station-label--projects {
 
 .about-board__text {
   margin: 0;
-  font-size: calc(11px * var(--face-comp));
-  line-height: calc(15.4px * var(--face-comp));
+  font-size: calc(11px * var(--face-comp) * var(--panel-boost));
+  line-height: calc(15.4px * var(--face-comp) * var(--panel-boost));
   letter-spacing: 0.005em;
   color: #bfd0da;
   text-shadow: var(--lift);
@@ -481,7 +490,7 @@ html[data-expanded='projects'] .station-label--projects {
   gap: 10px;
   padding: 0 16px;
   font-weight: 600;
-  font-size: 12px;
+  font-size: calc(12px * var(--panel-boost));
   letter-spacing: 0.06em;
   white-space: nowrap;
 }
@@ -545,7 +554,7 @@ html[data-expanded='projects'] .station-label--projects {
   background: transparent;
   /* Long names wrap before they reach the ticket's connector rail */
   width: max-content;
-  max-width: calc(172 * var(--s));
+  max-width: calc(172 * var(--s) * var(--label-boost));
   font-family: var(--font-mono);
   text-align: left;
   color: #f6e6a4;
@@ -587,7 +596,7 @@ html[data-expanded='projects'] .station-label--projects {
 
 .exp-label__title {
   font-weight: 600;
-  font-size: calc(12.5 * var(--s));
+  font-size: calc(12.5 * var(--s) * var(--label-boost));
   line-height: 1.1;
   letter-spacing: 0.02em;
   color: #f1dd93;
@@ -597,7 +606,7 @@ html[data-expanded='projects'] .station-label--projects {
 
 .exp-label__subtitle {
   font-weight: 700;
-  font-size: calc(10.5 * var(--s));
+  font-size: calc(10.5 * var(--s) * var(--label-boost));
   line-height: 1.1;
   letter-spacing: 0.02em;
   color: #bdb9cc;
@@ -721,7 +730,7 @@ html[data-expanded='projects'] .station-label--projects {
   margin: 0 0 4px;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 18px;
+  font-size: calc(18px * var(--panel-boost));
   line-height: 1.1;
   letter-spacing: 0.03em;
   color: #f7f1f8;
@@ -730,7 +739,7 @@ html[data-expanded='projects'] .station-label--projects {
 .ticket__subtitle {
   margin: 0;
   font-weight: 700;
-  font-size: 10.6px;
+  font-size: calc(10.6px * var(--panel-boost));
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: #f1dd93;
@@ -744,8 +753,8 @@ html[data-expanded='projects'] .station-label--projects {
 
 .ticket__text {
   margin: 0;
-  font-size: 10px;
-  line-height: 14.2px;
+  font-size: calc(10px * var(--panel-boost));
+  line-height: calc(14.2px * var(--panel-boost));
   color: #cfc9d8;
 }
 
@@ -835,7 +844,7 @@ html[data-expanded='projects'] .station-label--projects {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 14px;
+  font-size: calc(14px * var(--panel-boost));
   line-height: 1;
   letter-spacing: 0.06em;
   color: var(--accent);
@@ -910,7 +919,7 @@ html[data-expanded='projects'] .station-label--projects {
   margin: 0 0 4px;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 14.5px;
+  font-size: calc(14.5px * var(--panel-boost));
   line-height: 1.15;
   letter-spacing: 0.03em;
   color: #f7f1f8;
@@ -918,8 +927,8 @@ html[data-expanded='projects'] .station-label--projects {
 
 .project__subtitle {
   margin: 0 0 8px;
-  font-size: 9.6px;
-  line-height: 13.4px;
+  font-size: calc(9.6px * var(--panel-boost));
+  line-height: calc(13.4px * var(--panel-boost));
   color: #bdb9cc;
 }
 
@@ -934,7 +943,7 @@ html[data-expanded='projects'] .station-label--projects {
   border-radius: 3px;
   background: rgba(24, 18, 30, 0.88);
   color: var(--accent);
-  font-size: 8.6px;
+  font-size: calc(8.6px * var(--panel-boost));
   line-height: 1;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -1055,7 +1064,7 @@ html[data-expanded='projects'] .station-label--projects {
   border-radius: calc(2 * var(--s));
   background: rgba(20, 20, 32, 0.85);
   font-family: var(--font-mono);
-  font-size: calc(8 * var(--s));
+  font-size: calc(8 * var(--s) * var(--label-boost));
   line-height: 1;
   letter-spacing: 0.14em;
   color: #ebe7b6;
@@ -1192,7 +1201,7 @@ html[data-expanded='projects'] .station-label--projects {
   align-items: center;
   gap: 7px;
   margin: 0 0 7px;
-  font-size: 8.6px;
+  font-size: calc(8.6px * var(--panel-boost));
   letter-spacing: 0.06em;
   color: var(--accent-text);
 }
@@ -1212,7 +1221,7 @@ html[data-expanded='projects'] .station-label--projects {
   margin: 0 0 8px;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 13.5px;
+  font-size: calc(13.5px * var(--panel-boost));
   line-height: 1.25;
   letter-spacing: 0.02em;
   color: #f7f1f8;
@@ -1220,8 +1229,8 @@ html[data-expanded='projects'] .station-label--projects {
 
 .pub-board__authors {
   margin: 0;
-  font-size: 8.8px;
-  line-height: 12.5px;
+  font-size: calc(8.8px * var(--panel-boost));
+  line-height: calc(12.5px * var(--panel-boost));
   color: #bdb9cc;
 }
 
@@ -1281,13 +1290,15 @@ html[data-expanded='projects'] .station-label--projects {
 }
 
 /* ------------------------------------------------------------------ */
-/* Branding (lower-left)                                               */
+/* Branding (lower-left; pulls into side gutters on wide phones)       */
 /* ------------------------------------------------------------------ */
 
 .branding {
+  --b: calc(var(--s) * var(--text-boost));
   position: absolute;
-  left: calc(26 * var(--s));
-  top: calc(286 * var(--s));
+  left: max(12px, calc(var(--gutter-x) + 26 * var(--s) - var(--brand-pull)));
+  top: calc(var(--gutter-y) + 286 * var(--s) - (var(--text-boost) - 1) * 28 * var(--s));
+  max-width: min(calc(400 * var(--b)), calc(var(--layout-width) * 0.44));
   color: #e9e7ee;
 }
 
@@ -1314,8 +1325,8 @@ html[data-expanded='projects'] .station-label--projects {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 500;
-  font-size: calc(34.5 * var(--s));
-  line-height: calc(40 * var(--s));
+  font-size: calc(34.5 * var(--b));
+  line-height: calc(40 * var(--b));
   letter-spacing: 0.235em;
   display: flex;
   flex-direction: column;
@@ -1323,74 +1334,98 @@ html[data-expanded='projects'] .station-label--projects {
 
 .branding__first {
   color: #f1eff5;
-  text-shadow: 0 0 calc(12 * var(--s)) rgba(255, 255, 255, 0.18);
+  text-shadow: 0 0 calc(12 * var(--b)) rgba(255, 255, 255, 0.18);
 }
 
 .branding__last {
   color: #c98f98;
-  text-shadow: 0 0 calc(12 * var(--s)) rgba(214, 155, 141, 0.2);
+  text-shadow: 0 0 calc(12 * var(--b)) rgba(214, 155, 141, 0.2);
 }
 
 .branding__fields {
-  margin: calc(6 * var(--s)) 0 0;
+  margin: calc(6 * var(--b)) 0 0;
   font-family: var(--font-display);
   font-weight: 300;
-  font-size: calc(17.5 * var(--s));
+  font-size: calc(17.5 * var(--b));
   letter-spacing: 0.25em;
   color: #aca9b9;
 }
 
 .branding__rule {
-  width: calc(60 * var(--s));
-  height: calc(1.5 * var(--s));
-  margin-top: calc(21 * var(--s));
+  width: calc(60 * var(--b));
+  height: calc(1.5 * var(--b));
+  margin-top: calc(21 * var(--b));
   background: #a5808a;
-  box-shadow: 0 0 calc(6 * var(--s)) rgba(190, 140, 150, 0.35);
+  box-shadow: 0 0 calc(6 * var(--b)) rgba(190, 140, 150, 0.35);
 }
 
 .branding__motto {
-  margin: calc(19 * var(--s)) 0 0;
+  margin: calc(19 * var(--b)) 0 0;
   display: flex;
   flex-direction: column;
-  gap: calc(5.5 * var(--s));
+  gap: calc(5.5 * var(--b));
   font-family: var(--font-display);
   font-weight: 400;
-  font-size: calc(14.5 * var(--s));
+  font-size: calc(14.5 * var(--b));
   line-height: 1.15;
   letter-spacing: 0.31em;
   color: #8f8090;
 }
 
+html[data-short-landscape='true'] .branding {
+  top: auto;
+  bottom: max(10px, calc(var(--gutter-y) + 14 * var(--s)));
+}
+
+html[data-short-landscape='true'] .branding__name {
+  letter-spacing: 0.18em;
+  line-height: 1.08;
+}
+
+html[data-short-landscape='true'] .branding__fields,
+html[data-short-landscape='true'] .branding__motto {
+  letter-spacing: 0.2em;
+}
+
 /* ------------------------------------------------------------------ */
-/* Controls hint (lower-right)                                         */
+/* Controls hint (lower-right; mirrors branding into the right gutter) */
 /* ------------------------------------------------------------------ */
 
 .controls {
+  --c: calc(var(--s) * var(--text-boost));
   position: absolute;
-  left: calc(774 * var(--s));
-  top: calc(446 * var(--s));
+  left: min(
+    calc(var(--gutter-x) + 774 * var(--s) + var(--controls-pull)),
+    calc(var(--layout-width) - 186 * var(--c) - 12px)
+  );
+  top: calc(var(--gutter-y) + 446 * var(--s));
   display: flex;
   flex-direction: column;
-  gap: calc(12 * var(--s));
+  gap: calc(12 * var(--c));
   color: #8b8a96;
+}
+
+html[data-short-landscape='true'] .controls {
+  top: auto;
+  bottom: max(10px, calc(var(--gutter-y) + 12 * var(--s)));
 }
 
 .controls__row {
   display: flex;
   align-items: center;
-  gap: calc(12 * var(--s));
+  gap: calc(12 * var(--c));
 }
 
 .controls__icon {
-  width: calc(46 * var(--s));
+  width: calc(46 * var(--c));
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .controls__mouse {
-  width: calc(14 * var(--s));
-  height: calc(22 * var(--s));
+  width: calc(14 * var(--c));
+  height: calc(22 * var(--c));
   fill: none;
   stroke: #8b8a96;
   stroke-width: 1.3;
@@ -1399,21 +1434,21 @@ html[data-expanded='projects'] .station-label--projects {
 
 .controls__keys {
   display: grid;
-  grid-template-columns: repeat(3, calc(14 * var(--s)));
-  grid-template-rows: repeat(2, calc(14 * var(--s)));
-  gap: calc(2 * var(--s));
+  grid-template-columns: repeat(3, calc(14 * var(--c)));
+  grid-template-rows: repeat(2, calc(14 * var(--c)));
+  gap: calc(2 * var(--c));
 }
 
 .controls__key {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: calc(14 * var(--s));
-  height: calc(14 * var(--s));
-  border: calc(1 * var(--s)) solid #7f7e8a;
-  border-radius: calc(2 * var(--s));
+  width: calc(14 * var(--c));
+  height: calc(14 * var(--c));
+  border: calc(1 * var(--c)) solid #7f7e8a;
+  border-radius: calc(2 * var(--c));
   font-family: var(--font-mono);
-  font-size: calc(8 * var(--s));
+  font-size: calc(8 * var(--c));
   line-height: 1;
   color: #9d9ca8;
 }
@@ -1441,8 +1476,8 @@ html[data-expanded='projects'] .station-label--projects {
 .controls__text {
   margin: 0;
   font-family: var(--font-mono);
-  font-size: calc(8.2 * var(--s));
-  line-height: calc(13 * var(--s));
+  font-size: calc(8.2 * var(--c));
+  line-height: calc(13 * var(--c));
   letter-spacing: 0.02em;
   color: #8b8a96;
   white-space: nowrap;
@@ -2412,6 +2447,55 @@ html[data-expanded='projects'] .station-label--projects {
   width: calc(960 * var(--s));
   height: calc(540 * var(--s));
   transform: translate(-50%, -50%);
+  /* First text car starts at 14; last car is flush with the 960 frame. */
+  --ps-car-left: calc(14 * var(--s));
+  --ps-car-right: 0px;
+}
+
+html[data-short-landscape='true'] .ps-nav {
+  font-size: calc(10.5 * var(--s) * var(--text-boost));
+  height: calc(26 * var(--s) * var(--text-boost));
+  padding: 0 calc(12 * var(--s) * var(--text-boost));
+}
+
+html[data-short-landscape='true'] .ps-sign__name {
+  font-size: calc(21 * var(--s) * var(--text-boost));
+}
+
+html[data-short-landscape='true'] .ps-back {
+  font-size: calc(10 * var(--s) * var(--text-boost));
+}
+
+/* Center the three text cars in the viewport: left = 456s - 775s * car-boost */
+html[data-short-landscape='true'] .ps-train {
+  left: calc((456 - 775 * var(--car-boost)) * var(--s));
+}
+
+html[data-short-landscape='true'] .ps-frame {
+  --ps-car-left: calc((468 - 465 * var(--car-boost)) * var(--s));
+  --ps-car-right: calc((468 - 465 * var(--car-boost)) * var(--s));
+}
+
+html[data-short-landscape='true'] .ps-car {
+  width: calc(310 * var(--s) * var(--car-boost));
+}
+
+html[data-short-landscape='true'] .ps-car__window,
+html[data-short-landscape='true'] .ps-car__stripe {
+  width: calc(230 * var(--s) + 310 * var(--s) * (var(--car-boost) - 1));
+}
+
+html[data-short-landscape='true'] .ps-car__window {
+  overflow: hidden;
+}
+
+html[data-short-landscape='true'] .ps-car__window p {
+  font-size: calc(10.2 * var(--s) * var(--label-boost));
+  line-height: calc(14.2 * var(--s) * var(--label-boost));
+}
+
+html[data-short-landscape='true'] .ps-visit {
+  font-size: calc(10 * var(--s) * var(--text-boost));
 }
 
 /* Hall: back wall with faint trusses, and the ceiling ledge carrying the lights */
@@ -2493,8 +2577,8 @@ html[data-expanded='projects'] .station-label--projects {
 /* Top bar: previous / next controls and the hanging station sign */
 .ps-top {
   position: absolute;
-  left: calc(22 * var(--s));
-  right: calc(22 * var(--s));
+  left: 0;
+  right: 0;
   top: calc(26 * var(--s));
   height: calc(26 * var(--s));
   z-index: 6;
@@ -2531,14 +2615,14 @@ html[data-expanded='projects'] .station-label--projects {
 }
 
 .ps-nav--prev {
-  left: 0;
+  left: var(--ps-car-left);
   color: var(--coral);
   border-color: rgba(243, 180, 164, 0.85);
   box-shadow: 0 0 calc(10 * var(--s)) rgba(243, 180, 164, 0.22);
 }
 
 .ps-nav--next {
-  right: 0;
+  right: var(--ps-car-right);
   color: var(--cyan-bright);
   border-color: rgba(121, 208, 237, 0.85);
   box-shadow: 0 0 calc(10 * var(--s)) rgba(121, 208, 237, 0.25);
@@ -2758,9 +2842,9 @@ html[data-expanded='projects'] .station-label--projects {
   background: linear-gradient(
     180deg,
     #4a5068 0,
-    var(--car-roof) calc(10 * var(--s)),
-    #2c3148 calc(27 * var(--s)),
-    #1a1e2e calc(29 * var(--s)),
+    var(--car-roof) calc(6 * var(--s)),
+    #2c3148 calc(16 * var(--s)),
+    #1a1e2e calc(18 * var(--s)),
     var(--car-body) 40%,
     #151824 75%,
     var(--car-shade) 100%
@@ -2781,9 +2865,9 @@ html[data-expanded='projects'] .station-label--projects {
 .ps-car__vent {
   position: absolute;
   left: 50%;
-  top: calc(7 * var(--s));
+  top: calc(4 * var(--s));
   width: calc(32 * var(--s));
-  height: calc(5 * var(--s));
+  height: calc(4 * var(--s));
   border-radius: 0 0 calc(2 * var(--s)) calc(2 * var(--s));
   background: var(--car-body);
   transform: translateX(-50%);
@@ -2794,7 +2878,7 @@ html[data-expanded='projects'] .station-label--projects {
   position: absolute;
   left: 0;
   right: 0;
-  top: calc(28 * var(--s));
+  top: calc(16 * var(--s));
   height: calc(2 * var(--s));
   background: rgba(14, 15, 22, 0.4);
   box-shadow: 0 1px 0 rgba(247, 241, 248, 0.1);
@@ -2805,9 +2889,9 @@ html[data-expanded='projects'] .station-label--projects {
   --door: var(--coral);
   position: absolute;
   left: calc(12 * var(--s));
-  top: calc(36 * var(--s));
+  top: calc(24 * var(--s));
   width: calc(48 * var(--s));
-  height: calc(168 * var(--s));
+  height: calc(180 * var(--s));
   border-radius: calc(8 * var(--s)) calc(8 * var(--s)) calc(3 * var(--s)) calc(3 * var(--s));
   background: var(--door);
   box-shadow:
@@ -2846,9 +2930,9 @@ html[data-expanded='projects'] .station-label--projects {
 .ps-car__window {
   position: absolute;
   left: calc(68 * var(--s));
-  top: calc(36 * var(--s));
+  top: calc(24 * var(--s));
   width: calc(230 * var(--s));
-  height: calc(158 * var(--s));
+  height: calc(170 * var(--s));
   display: flex;
   align-items: center;
   padding: calc(9 * var(--s)) calc(11 * var(--s));
@@ -2873,8 +2957,8 @@ html[data-expanded='projects'] .station-label--projects {
   position: absolute;
   left: calc(22 * var(--s));
   right: calc(12 * var(--s));
-  top: calc(36 * var(--s));
-  height: calc(158 * var(--s));
+  top: calc(24 * var(--s));
+  height: calc(170 * var(--s));
   border: calc(1.2 * var(--s)) solid rgba(121, 208, 237, 0.22);
   border-radius: calc(6 * var(--s));
   background: #0a0812;

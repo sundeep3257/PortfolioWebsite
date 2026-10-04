@@ -34,6 +34,7 @@ import { WorldPanel } from './WorldPanel'
 import { getProjectPage } from '../data/projectPages'
 import { projectPath } from '../lib/routes'
 import { useAppNavigation } from '../hooks/useAppNavigation'
+import { useWideLayout } from '../hooks/useWideLayout'
 import { ArrowRightIcon, ChevronDownIcon, ChevronUpIcon, PaletteIcon, StethoscopeIcon } from './Icons'
 
 const ICONS: Record<ProjectIcon, typeof PaletteIcon> = {
@@ -61,17 +62,19 @@ interface SideProps {
 
 function ProjectSide({ category, refs, expanded, interactive }: SideProps) {
   const { goToProject } = useAppNavigation()
+  const { widthBoost } = useWideLayout()
   const { side, projects } = category
   const geometry = PROJECT_SIDES[side]
+  const panelWidth = geometry.panelWidth * widthBoost
   const color = STATIONS.projects.color
   const points = useMemo(() => projectBranch(side), [side])
   const node = useMemo(() => projectNode(side), [side])
   const panelGround = useMemo(() => {
     const [nx, ny] = geometry.node
-    const half = geometry.panelWidth / 2
+    const half = panelWidth / 2
     const cx = side === 'left' ? nx - PROJECT_PANEL_GAP - half : nx + PROJECT_PANEL_GAP + half
     return designToGroundAt(PROJECTS_FRAMING, cx, ny)
-  }, [geometry, side])
+  }, [geometry, side, panelWidth])
 
   const [index, setIndex] = useState(0)
   const wheel = useRef({ acc: 0, lastStep: 0 })
@@ -120,7 +123,7 @@ function ProjectSide({ category, refs, expanded, interactive }: SideProps) {
 
       <WorldPanel
         position={[panelGround[0], 0, panelGround[1]]}
-        width={geometry.panelWidth}
+        width={panelWidth}
         anchor="top"
         contentRef={refs.panel}
         className={`projects projects--${side}${interactive ? ' is-interactive' : ''}`}

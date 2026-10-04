@@ -1,6 +1,6 @@
 import { useRef, type CSSProperties } from 'react'
 import * as THREE from 'three'
-import { CAMERA_PITCH, CAMERA_YAW } from '../data/camera'
+import { CAMERA_PITCH, CAMERA_YAW, SCREEN_RIGHT } from '../data/camera'
 import { STATIONS } from '../data/stations'
 import {
   ABOUT_BOARD_WIDTH,
@@ -23,13 +23,11 @@ import { Track } from './Track'
 import { Platform, type PlatformAnimation } from './Platform'
 import { SignSlab, SLAB_COLOR, type SlabAnimation } from './SignSlab'
 import { PANEL_PX_PER_UNIT, WorldPanel } from './WorldPanel'
+import { useWideLayout } from '../hooks/useWideLayout'
 import { DownloadIcon, LinkedInIcon, PubMedIcon, ResearchGateIcon } from './Icons'
 
 const POST_COLOR = '#7079a2'
 
-/** Structure dimensions in world units. */
-const SIGN_WIDTH = ABOUT_BOARD_WIDTH / PANEL_PX_PER_UNIT
-const BASE_WIDTH = SIGN_WIDTH + 2 * ABOUT_STRUCTURE.base.margin
 const BASE_HEIGHT = ABOUT_STRUCTURE.consolePx / PANEL_PX_PER_UNIT
 const POST_GAP = ABOUT_STRUCTURE.posts.gapPx / PANEL_PX_PER_UNIT
 /** Posts run from the base top into the sign body. */
@@ -44,6 +42,16 @@ const SIGN_BOTTOM = BASE_HEIGHT + POST_GAP
  */
 export function AboutSubNetwork() {
   const { aboutExpanded } = useTrainNavigationContext()
+  const { aboutWidthBoost, aboutShiftPx } = useWideLayout()
+  const boardWidth = ABOUT_BOARD_WIDTH * aboutWidthBoost
+  const signWidth = boardWidth / PANEL_PX_PER_UNIT
+  const baseWidth = signWidth + 2 * ABOUT_STRUCTURE.base.margin
+  const platformWidth = ABOUT_PLATFORM_SIZE.width * aboutWidthBoost
+  const shiftWorld = ((boardWidth - ABOUT_BOARD_WIDTH) / 2 + aboutShiftPx) / PANEL_PX_PER_UNIT
+  const platformPos: [number, number] = [
+    ABOUT_PLATFORM[0] + SCREEN_RIGHT[0] * shiftWorld,
+    ABOUT_PLATFORM[1] + SCREEN_RIGHT[1] * shiftWorld,
+  ]
   const root = useRef<THREE.Group>(null)
   const branch = useRef<THREE.Group>(null)
   const stub = useRef<THREE.Group>(null)
@@ -109,8 +117,8 @@ export function AboutSubNetwork() {
       </group>
 
       <Platform
-        position={ABOUT_PLATFORM}
-        width={ABOUT_PLATFORM_SIZE.width}
+        position={platformPos}
+        width={platformWidth}
         depth={ABOUT_PLATFORM_SIZE.depth}
         height={ABOUT_PLATFORM_SIZE.height}
         color={color}
@@ -119,19 +127,19 @@ export function AboutSubNetwork() {
         {/* Base block and the two posts, aligned with the screen like the plinth */}
         <group rotation={[0, CAMERA_YAW, 0]}>
           <mesh position={[0, BASE_HEIGHT / 2, -ABOUT_STRUCTURE.base.depth / 2]}>
-            <boxGeometry args={[BASE_WIDTH, BASE_HEIGHT, ABOUT_STRUCTURE.base.depth]} />
+            <boxGeometry args={[baseWidth, BASE_HEIGHT, ABOUT_STRUCTURE.base.depth]} />
             <meshStandardMaterial color={SLAB_COLOR} roughness={0.65} metalness={0.2} />
           </mesh>
           {/* Lit lip along the base's top front edge */}
           <mesh position={[0, BASE_HEIGHT - 0.04, -0.04]}>
-            <boxGeometry args={[BASE_WIDTH, 0.08, 0.08]} />
+            <boxGeometry args={[baseWidth, 0.08, 0.08]} />
             <meshBasicMaterial color={color} toneMapped={false} />
           </mesh>
           {[-1, 1].map((side) => (
             <mesh
               key={side}
               position={[
-                side * (SIGN_WIDTH / 2 - ABOUT_STRUCTURE.posts.inset),
+                side * (signWidth / 2 - ABOUT_STRUCTURE.posts.inset),
                 BASE_HEIGHT + POST_LENGTH / 2,
                 -ABOUT_STRUCTURE.posts.setback,
               ]}
@@ -149,7 +157,7 @@ export function AboutSubNetwork() {
 
         {/* Link console on the base's front face */}
         <WorldPanel
-          width={ABOUT_BOARD_WIDTH}
+          width={boardWidth}
           lean={CAMERA_PITCH}
           contentRef={consolePanel}
           className="about-base"
@@ -186,7 +194,7 @@ export function AboutSubNetwork() {
         {/* The sign itself: a thick slab on the posts with the biography on its face */}
         <SignSlab
           position={[0, SIGN_BOTTOM, 0]}
-          width={ABOUT_BOARD_WIDTH}
+          width={boardWidth}
           depth={ABOUT_STRUCTURE.sign.depth}
           color={color}
           anim={slab}

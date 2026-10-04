@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } fro
 import * as THREE from 'three'
 import { Html } from '@react-three/drei'
 import { useFrame } from '@react-three/fiber'
+import { SCREEN_RIGHT } from '../data/camera'
 import { STATIONS } from '../data/stations'
 import {
   EXPERIENCE_BRANCHES,
@@ -19,7 +20,8 @@ import { applyReveal, approach, clamp01, easeOutBack, easeOutCubic, useRevealTim
 import { StationMarker, STATION_Y, type MarkerAnimation } from './StationMarker'
 import { STATION_OVERRUN } from './SubwayMap'
 import { RibbonTrack, type RibbonAnimation } from './RibbonTrack'
-import { WorldPanel, useMeasuredHeight } from './WorldPanel'
+import { PANEL_PX_PER_UNIT, WorldPanel, useMeasuredHeight } from './WorldPanel'
+import { useWideLayout } from '../hooks/useWideLayout'
 import { ArrowRightIcon } from './Icons'
 
 /** Refs for everything one branch animates per frame. */
@@ -101,6 +103,7 @@ function SubStation({ index, refs, selected, interactive, onSelect }: SubStation
  */
 export function ExperiencesSubNetwork() {
   const { expandedStation } = useTrainNavigationContext()
+  const { widthBoost, ticketShiftPx, labelBoost, short } = useWideLayout()
   const expanded = expandedStation === 'experiences'
   const root = useRef<THREE.Group>(null)
   const ticket = useRef<HTMLDivElement>(null)
@@ -181,10 +184,28 @@ export function ExperiencesSubNetwork() {
   })
 
   const experience = EXPERIENCES[selected]
-  // Connector geometry: rail to the left of the ticket, sliding to the selected label's row.
+  const ticketWidth = TICKET.width * widthBoost
+  const shiftPx = (ticketWidth - TICKET.width) / 2 + ticketShiftPx
+  const extraWorld = shiftPx / PANEL_PX_PER_UNIT
+  const ticketGround: [number, number] = [
+    TICKET_GROUND[0] + SCREEN_RIGHT[0] * extraWorld,
+    TICKET_GROUND[1] + SCREEN_RIGHT[1] * extraWorld,
+  ]
+  const ticketLeft = TICKET.centre[0] - TICKET.width / 2 + ticketShiftPx
+  // Keep the rail in the gap between the (possibly wider) labels and the ticket.
+  // Desktop uses the authored rail/tick so the 16:9 composition is unchanged.
+  const nodeX = EXPERIENCE_NODES_SCREEN[0][0]
+  const labelRight = nodeX + 30 + 172 * labelBoost
+  let railX = TICKET.railX
+  let tickX = TICKET.tickX
+  if (short) {
+    tickX = labelRight + 10
+    railX = Math.min(ticketLeft - 12, Math.max(tickX + 14, ticketLeft - 36))
+    if (railX <= tickX) railX = tickX + 14
+  }
   const dy = EXPERIENCE_NODES_SCREEN[selected][1] - TICKET.centre[1]
-  const railLeft = TICKET.railX - (TICKET.centre[0] - TICKET.width / 2)
-  const tickLeft = TICKET.tickX - (TICKET.centre[0] - TICKET.width / 2)
+  const railLeft = railX - ticketLeft
+  const tickLeft = tickX - ticketLeft
 
   return (
     <group ref={root} visible={false}>
@@ -215,8 +236,8 @@ export function ExperiencesSubNetwork() {
       ))}
 
       <WorldPanel
-        position={[TICKET_GROUND[0], 0, TICKET_GROUND[1]]}
-        width={TICKET.width}
+        position={[ticketGround[0], 0, ticketGround[1]]}
+        width={ticketWidth}
         anchor="center"
         contentRef={ticket}
         className="ticket"

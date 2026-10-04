@@ -41,7 +41,30 @@ export const CAMERA_POSITION: [number, number, number] = [
   Math.cos(pitch) * Math.cos(yaw) * CAMERA_DISTANCE,
 ]
 
-/** Scale factor that maps design pixels to viewport pixels ("contain" fit). */
+/** Phone / short-device landscapes. Laptop and desktop heights stay above this. */
+export const SHORT_LANDSCAPE_MAX_HEIGHT = 520
+
+export function isShortLandscape(viewportWidth: number, viewportHeight: number) {
+  return viewportWidth > viewportHeight && viewportHeight <= SHORT_LANDSCAPE_MAX_HEIGHT
+}
+
+/**
+ * How much wider than 16:9 the viewport is, 0 at ≤16:9 and 1 around ~2.2:1
+ * (typical landscape phones). Laptop 16:9 / 16:10 stays at 0.
+ */
+export function wideLandscapeT(viewportWidth: number, viewportHeight: number) {
+  if (viewportHeight <= 0) return 0
+  const aspect = viewportWidth / viewportHeight
+  const designAspect = DESIGN_WIDTH / DESIGN_HEIGHT
+  return Math.min(1, Math.max(0, (aspect / designAspect - 1) / 0.35))
+}
+
+/**
+ * Scale factor that maps design pixels to viewport pixels ("contain" fit).
+ *
+ * Extra width on short landscapes is used by moving / widening overlays and
+ * station boards — not by zooming in, which would crop tall signs.
+ */
 export function designScale(viewportWidth: number, viewportHeight: number) {
   return Math.min(viewportWidth / DESIGN_WIDTH, viewportHeight / DESIGN_HEIGHT)
 }
@@ -95,9 +118,21 @@ export interface CameraFraming {
  * Landing-map framing. The camera target is nudged screen-right so the
  * subway map, buildings, and overlays sit with equal left/right margin
  * in the 960x540 design frame (the composition was previously right-heavy).
+ *
+ * Short phone landscapes shift a little further right so the left gutter
+ * can hold larger branding without covering tracks.
  */
 const MAP_SHIFT_PX = 32
-export const MAP_FRAMING: CameraFraming = { target: screenDeltaToGround(MAP_SHIFT_PX, 0), zoom: 1 }
+const MAP_WIDE_EXTRA_SHIFT_PX = 40
+
+export function mapFramingForViewport(viewportWidth: number, viewportHeight: number): CameraFraming {
+  const t = isShortLandscape(viewportWidth, viewportHeight) ? wideLandscapeT(viewportWidth, viewportHeight) : 0
+  const shiftPx = MAP_SHIFT_PX + t * MAP_WIDE_EXTRA_SHIFT_PX
+  return { target: screenDeltaToGround(shiftPx, 0), zoom: 1 }
+}
+
+/** Reference framing at the authored 16:9 design size (laptop / default). */
+export const MAP_FRAMING: CameraFraming = mapFramingForViewport(DESIGN_WIDTH, DESIGN_HEIGHT)
 
 /** Ground point that appears at design-frame pixel (px, py) while the camera holds `framing`. */
 export function designToGroundAt(framing: CameraFraming, px: number, py: number): [number, number] {

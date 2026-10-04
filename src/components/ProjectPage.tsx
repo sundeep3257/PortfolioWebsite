@@ -73,8 +73,8 @@ function ProjectNavButton({
 }
 
 /**
- * Hanging station sign: grows with the title up to the space between the
- * prev/next controls, then shrinks type (and tracking) until the name fits.
+ * Hanging station sign: grows with the title up to the space left after the
+ * prev/next controls and their equal gaps, then shrinks type until it fits.
  *
  * `--s` is a CSS `min(calc(...))` expression, so getPropertyValue cannot be
  * parseFloat'd — derive the used scale from the 960-wide design frame instead.
@@ -101,12 +101,10 @@ function StationSign({ title }: { title: string }) {
       const padX = 28 * s
       const preferredFont = 21 * s
       const minFont = Math.max(5.5, 6.5 * s)
-      const gap = 12 * s
-
-      const reserved =
-        (prev?.offsetWidth ?? 0) + (next?.offsetWidth ?? 0) + gap * (prev && next ? 2 : prev || next ? 1 : 0)
-      // Never force the plate wider than the gap between the nav controls.
-      const maxWidth = Math.max(0, top.clientWidth - reserved)
+      const gap = 16 * s
+      const prevRight = prev ? prev.offsetLeft + prev.offsetWidth : 0
+      const nextLeft = next ? next.offsetLeft : top.clientWidth
+      const maxWidth = Math.max(0, nextLeft - prevRight - gap * 2)
 
       name.style.letterSpacing = `${preferredTracking}em`
       name.style.paddingLeft = `${preferredTracking}em`

@@ -25,6 +25,7 @@ import { useDocumentMeta } from './hooks/useDocumentMeta'
 import { getProjectPageBySlug } from './data/projectPages'
 
 import { mapPath, navigate, parseRoute } from './lib/routes'
+import { applyVisualLayout } from './lib/visualLayout'
 
 
 
@@ -100,7 +101,9 @@ function AppShell() {
 
   }, [])
 
-
+  useEffect(() => {
+    applyVisualLayout()
+  }, [])
 
   useEffect(() => {
 

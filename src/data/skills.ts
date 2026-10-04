@@ -116,11 +116,15 @@ export const SKILL_BOARD = {
 }
 
 /** Ground point where a category's board pedestal stands. */
-export function skillBoardBase(category: SkillCategory): [number, number] {
+export function skillBoardBase(category: SkillCategory, offset: [number, number] = [0, 0]): [number, number] {
   const points = skillWaypoints(category)
   const [sx, sz] = points[points.length - 1]
   const [px, py] = worldToDesignAt(SKILLS_FRAMING, sx, 0, sz)
-  return designToGroundAt(SKILLS_FRAMING, px + SKILL_BOARD.baseOffset[0], py + SKILL_BOARD.baseOffset[1])
+  return designToGroundAt(
+    SKILLS_FRAMING,
+    px + SKILL_BOARD.baseOffset[0] + offset[0],
+    py + SKILL_BOARD.baseOffset[1] + offset[1],
+  )
 }
 
 /**

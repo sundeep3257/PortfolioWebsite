@@ -19,8 +19,11 @@ import {
   useIntroReveal,
 } from '../hooks/useIntroReveal'
 import { useTrainNavigationContext, type ExpandableStation } from '../hooks/useTrainNavigation'
+import { useWideLayout } from '../hooks/useWideLayout'
 import { setDrawableVisible, setPointLightFactor } from '../lib/lights'
 import { getRadialGlowTexture } from '../lib/textures'
+
+const GUTTER_INTRO = { start: 0.35, end: 1.05 }
 
 const BUILDING_COLOR = '#35354c'
 const BUILDING_TOP_COLOR = '#1f1f30'
@@ -272,23 +275,35 @@ function Outline({ outline, intro }: { outline: BlockOutline; intro?: { start: n
 }
 
 export function Buildings() {
+  const { short, wideT } = useWideLayout()
+  const showGutter = short && wideT > 0.12
+
   return (
     <group>
-      {BUILDINGS.map((box, i) => (
-        <Retractable key={i} hideWhen={box.hideWhenExpanded} intro={BUILDING_INTRO[i]}>
-          <Building box={box} />
-        </Retractable>
-      ))}
-      {PILLARS.map((pillar, i) => (
-        <Retractable key={i} hideWhen={pillar.hideWhenExpanded} intro={PILLAR_INTRO[i]}>
-          <Pillar pillar={pillar} />
-        </Retractable>
-      ))}
-      {OUTLINES.map((outline, i) => (
-        <Retractable key={i} hideWhen={outline.hideWhenExpanded}>
-          <Outline outline={outline} intro={OUTLINE_INTRO[i]} />
-        </Retractable>
-      ))}
+      {BUILDINGS.map((box, i) => {
+        if (box.gutter && !showGutter) return null
+        return (
+          <Retractable key={i} hideWhen={box.hideWhenExpanded} intro={BUILDING_INTRO[i] ?? GUTTER_INTRO}>
+            <Building box={box} />
+          </Retractable>
+        )
+      })}
+      {PILLARS.map((pillar, i) => {
+        if (pillar.gutter && !showGutter) return null
+        return (
+          <Retractable key={i} hideWhen={pillar.hideWhenExpanded} intro={PILLAR_INTRO[i] ?? GUTTER_INTRO}>
+            <Pillar pillar={pillar} />
+          </Retractable>
+        )
+      })}
+      {OUTLINES.map((outline, i) => {
+        if (outline.gutter && !showGutter) return null
+        return (
+          <Retractable key={i} hideWhen={outline.hideWhenExpanded}>
+            <Outline outline={outline} intro={OUTLINE_INTRO[i]} />
+          </Retractable>
+        )
+      })}
     </group>
   )
 }

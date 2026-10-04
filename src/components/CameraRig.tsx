@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber'
 import { OrthographicCamera } from '@react-three/drei'
 import * as THREE from 'three'
 import type { OrthographicCamera as OrthographicCameraImpl } from 'three'
-import { BASE_ZOOM, CAMERA_POSITION, designScale, MAP_FRAMING, type CameraFraming } from '../data/camera'
+import { BASE_ZOOM, CAMERA_POSITION, designScale, mapFramingForViewport, type CameraFraming } from '../data/camera'
 import { SKILLS_FRAMING } from '../data/skills'
 import { ABOUT_FRAMING } from '../data/about'
 import { EXPERIENCES_FRAMING } from '../data/experiences'
@@ -35,7 +35,10 @@ interface Tween {
 
 /**
  * Fixed orthographic camera. The zoom tracks the viewport so the 960x540
- * reference composition is preserved ("contain" fit) at any window size.
+ * reference composition is preserved ("contain" fit) at laptop sizes.
+ *
+ * On short landscape phones the shared designScale fills more of the width
+ * and the landing map shifts slightly so branding can use the left gutter.
  *
  * The viewing angle never changes; the rig only slides its target point and
  * zoom factor between framings (map <-> a station close-up) with an eased tween.
@@ -45,10 +48,13 @@ export function CameraRig() {
   const { width, height } = useThree((s) => s.size)
   const { expandedStation } = useTrainNavigationContext()
 
-  const current = useRef<CameraFraming>({ target: [...MAP_FRAMING.target], zoom: MAP_FRAMING.zoom })
+  const mapFraming = mapFramingForViewport(width, height)
+  const current = useRef<CameraFraming>({ target: [...mapFraming.target], zoom: mapFraming.zoom })
   const tween = useRef<Tween | null>(null)
   const offset = useRef(new THREE.Vector3(...CAMERA_POSITION))
   const warming = useRef(false)
+  const mapFramingRef = useRef(mapFraming)
+  mapFramingRef.current = mapFraming
 
   const apply = (framing: CameraFraming) => {
     const cam = ref.current
@@ -66,12 +72,15 @@ export function CameraRig() {
   }
 
   useLayoutEffect(() => {
+    if (!expandedStation && !tween.current && !warming.current) {
+      current.current = { target: [...mapFraming.target], zoom: mapFraming.zoom }
+    }
     apply(current.current)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [width, height])
+  }, [width, height, mapFraming.target[0], mapFraming.target[1], mapFraming.zoom, expandedStation])
 
   useEffect(() => {
-    const to = expandedStation ? STATION_FRAMINGS[expandedStation] : MAP_FRAMING
+    const to = expandedStation ? STATION_FRAMINGS[expandedStation] : mapFramingRef.current
     tween.current = {
       from: { target: [...current.current.target], zoom: current.current.zoom },
       to,
@@ -91,7 +100,8 @@ export function CameraRig() {
     }
     if (warming.current) {
       warming.current = false
-      current.current = { target: [...MAP_FRAMING.target], zoom: MAP_FRAMING.zoom }
+      const map = mapFramingRef.current
+      current.current = { target: [...map.target], zoom: map.zoom }
       tween.current = null
       apply(current.current)
       return

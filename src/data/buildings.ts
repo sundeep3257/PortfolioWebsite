@@ -30,7 +30,15 @@ export interface GlowStrip {
 /** Decoration that would sit under a station's sub-network sinks into the ground while that station is open. */
 interface Retractable {
   hideWhenExpanded?: ExpandableStation[]
+  /**
+   * Extra side-gutter clusters. They only appear on short, wide landscapes
+   * (where the 960×540 frame leaves empty left/right world) and stay off
+   * 16:9 desktop. They also retract for every station close-up.
+   */
+  gutter?: boolean
 }
+
+const GUTTER_HIDE: ExpandableStation[] = ['about', 'skills', 'experiences', 'projects', 'publications']
 
 export interface BuildingBox extends Retractable {
   at: [number, number]
@@ -221,6 +229,106 @@ export const BUILDINGS: BuildingBox[] = [
     strips: [bars('left', STRIP_COLORS.cream, 2, 0.52, 0.3)],
     hideWhenExpanded: ['projects', 'publications'],
   },
+
+  // Wide-landscape left gutter (above the branding block; design y stays < 260)
+  {
+    at: [-70, 88],
+    size: [1.9, 1.8],
+    height: 4.6,
+    strips: [bars('left', STRIP_COLORS.cyan, 4, 0.6, 0.26), vertical('right', STRIP_COLORS.coral, 0.52, 0.84)],
+    gutter: true,
+    hideWhenExpanded: GUTTER_HIDE,
+  },
+  {
+    at: [-118, 102],
+    size: [1.5, 1.5],
+    height: 2.2,
+    strips: [bars('left', STRIP_COLORS.cream, 2, 0.55, 0.26)],
+    gutter: true,
+    hideWhenExpanded: GUTTER_HIDE,
+  },
+  {
+    at: [-52, 118],
+    size: [1.6, 1.6],
+    height: 1.5,
+    strips: [bars('left', STRIP_COLORS.coral, 2, 0.54, 0.24), vertical('right', STRIP_COLORS.cyan, 0.42, 0.7)],
+    gutter: true,
+    hideWhenExpanded: GUTTER_HIDE,
+  },
+  {
+    at: [-128, 152],
+    size: [1.8, 1.7],
+    height: 3.4,
+    strips: [vertical('right', STRIP_COLORS.cream, 0.48, 0.8), bars('left', STRIP_COLORS.cyan, 3, 0.58, 0.22)],
+    gutter: true,
+    hideWhenExpanded: GUTTER_HIDE,
+  },
+  {
+    at: [-168, 138],
+    size: [1.4, 1.4],
+    height: 1.3,
+    strips: [bars('left', STRIP_COLORS.coral, 2, 0.52, 0.28)],
+    gutter: true,
+    hideWhenExpanded: GUTTER_HIDE,
+  },
+  {
+    at: [-150, 198],
+    size: [1.5, 1.5],
+    height: 2.0,
+    strips: [bars('left', STRIP_COLORS.cyan, 3, 0.56, 0.24)],
+    gutter: true,
+    hideWhenExpanded: GUTTER_HIDE,
+  },
+
+  // Wide-landscape right gutter (beyond About / Start)
+  {
+    at: [1048, 128],
+    size: [2.0, 1.9],
+    height: 5.0,
+    strips: [bars('left', STRIP_COLORS.cyan, 3, 0.62, 0.24), vertical('right', STRIP_COLORS.coral, 0.58, 0.86)],
+    gutter: true,
+    hideWhenExpanded: GUTTER_HIDE,
+  },
+  {
+    at: [1092, 152],
+    size: [1.6, 1.6],
+    height: 2.4,
+    strips: [bars('left', STRIP_COLORS.cream, 3, 0.58, 0.26)],
+    gutter: true,
+    hideWhenExpanded: GUTTER_HIDE,
+  },
+  {
+    at: [1018, 176],
+    size: [1.5, 1.5],
+    height: 1.4,
+    strips: [bars('left', STRIP_COLORS.coral, 2, 0.54, 0.26)],
+    gutter: true,
+    hideWhenExpanded: GUTTER_HIDE,
+  },
+  {
+    at: [1135, 198],
+    size: [1.7, 1.7],
+    height: 3.2,
+    strips: [vertical('right', STRIP_COLORS.cream, 0.5, 0.78), bars('left', STRIP_COLORS.cyan, 3, 0.6, 0.22)],
+    gutter: true,
+    hideWhenExpanded: GUTTER_HIDE,
+  },
+  {
+    at: [1072, 328],
+    size: [1.8, 1.8],
+    height: 2.8,
+    strips: [bars('left', STRIP_COLORS.cyan, 3, 0.58, 0.24), vertical('right', STRIP_COLORS.coral, 0.46, 0.8)],
+    gutter: true,
+    hideWhenExpanded: GUTTER_HIDE,
+  },
+  {
+    at: [1118, 352],
+    size: [1.4, 1.4],
+    height: 1.2,
+    strips: [bars('left', STRIP_COLORS.cream, 2, 0.54, 0.26)],
+    gutter: true,
+    hideWhenExpanded: GUTTER_HIDE,
+  },
 ]
 
 export const PILLARS: GlowPillar[] = [
@@ -233,6 +341,10 @@ export const PILLARS: GlowPillar[] = [
   { at: [460, 335], color: STRIP_COLORS.cream, hideWhenExpanded: ['skills'] },
   { at: [529, 381], color: STRIP_COLORS.coral, hideWhenExpanded: ['skills'] },
   { at: [95, 216], color: STRIP_COLORS.cream, hideWhenExpanded: ['projects', 'publications'] },
+  { at: [-78, 96], color: STRIP_COLORS.cyan, height: 1.4, gutter: true, hideWhenExpanded: GUTTER_HIDE },
+  { at: [-140, 155], color: STRIP_COLORS.coral, height: 1.1, gutter: true, hideWhenExpanded: GUTTER_HIDE },
+  { at: [1060, 140], color: STRIP_COLORS.cream, height: 1.5, gutter: true, hideWhenExpanded: GUTTER_HIDE },
+  { at: [1108, 336], color: STRIP_COLORS.cyan, height: 1.1, gutter: true, hideWhenExpanded: GUTTER_HIDE },
 ]
 
 export const OUTLINES: BlockOutline[] = [
@@ -243,4 +355,6 @@ export const OUTLINES: BlockOutline[] = [
   { at: [496, 360], size: [8, 6.4], hideWhenExpanded: ['skills'] },
   { at: [395, 512], size: [6, 6], hideWhenExpanded: ['skills'] },
   { at: [670, 490], size: [12, 8], color: '#34344a', opacity: 0.3 },
+  { at: [-90, 130], size: [7.2, 6.2], gutter: true, hideWhenExpanded: GUTTER_HIDE },
+  { at: [1085, 190], size: [7.4, 7.0], gutter: true, hideWhenExpanded: GUTTER_HIDE },
 ]
