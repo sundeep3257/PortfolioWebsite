@@ -147,17 +147,17 @@ export function ExperiencesSubNetwork() {
   useRevealTimeline(
     expanded,
     EXPERIENCES_TIMELINE,
-    (phase, mode) => {
+    (phase) => {
       const tracks = easeOutCubic(phase('tracks'))
       const stations = phase('stations')
       const labels = phase('labels')
       revealed.current = { tracks, stations }
       const count = EXPERIENCES.length
       branchRefs.forEach((refs, i) => {
-        // Branches unfold from the top down, each slightly after the last; all retract together.
-        refs.track.current.progress = mode === 'reveal' ? clamp01(tracks * 1.5 - (i / count) * 0.5) : tracks
+        // Branches unfold from the top down and fold back in reverse.
+        refs.track.current.progress = clamp01(tracks * 1.5 - (i / count) * 0.5)
         refs.marker.current.opacity = stations
-        const own = mode === 'reveal' ? clamp01(labels * 1.4 - (i / count) * 0.4) : labels
+        const own = clamp01(labels * 1.4 - (i / count) * 0.4)
         const el = refs.label.current
         if (el) {
           el.style.opacity = own.toFixed(3)

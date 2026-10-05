@@ -239,7 +239,8 @@ export function ProjectsSubNetwork() {
         refs.track.current.progress = tracks
         refs.marker.current.opacity = stations
         refs.marker.current.scale = stations > 0 ? 0.6 + 0.4 * easeOutBack(stations) : 0
-        const own = mode === 'reveal' ? clamp01(panels * 1.3 - i * 0.3) : panels
+        // The two panels arrive one after the other and leave in reverse.
+        const own = clamp01(panels * 1.3 - i * 0.3)
         applyReveal(refs.panel.current, easeOutCubic(own), 12)
       })
       if (mode === 'reveal' && panels >= 1) setInteractive(true)

@@ -23,6 +23,31 @@ export function approach(current: number, target: number, delta: number, speed: 
 export type Phase = readonly [number, number]
 export type RevealMode = 'reveal' | 'retract'
 
+/** Latest end time of a reveal or retract timeline. */
+export function timelineEnd(phases: Readonly<Record<string, Phase>>): number {
+  let end = 0
+  for (const phase of Object.values(phases)) end = Math.max(end, phase[1])
+  return end
+}
+
+/**
+ * Time-reverse of a reveal timeline. A phase that played from `start` to `end`
+ * plays from `total - end` to `total - start`. Retract progress already runs
+ * backwards, so the fold-away is the unfold played in reverse.
+ */
+export function mirroredRetract<T extends Readonly<Record<string, Phase>>>(
+  reveal: T,
+): { [K in keyof T]: Phase } {
+  const total = timelineEnd(reveal)
+  const retract = {} as { [K in keyof T]: Phase }
+  for (const key of Object.keys(reveal) as (keyof T)[]) {
+    const [start, finish] = reveal[key]
+    const reversed: Phase = [total - finish, total - start]
+    retract[key] = reversed
+  }
+  return retract
+}
+
 export interface RevealSpec<K extends string> {
   reveal: Record<K, Phase>
   retract: Record<K, Phase>

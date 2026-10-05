@@ -9,6 +9,7 @@
  */
 import publicationsSource from '../../content/Publications.txt?raw'
 import { parsePublications, slugify } from '../lib/parseContent'
+import { mirroredRetract } from '../lib/reveal'
 import { designToGroundAt, framingAround, STATION_ZOOM, type CameraFraming } from './camera'
 import { STATIONS } from './stations'
 
@@ -71,19 +72,18 @@ export const PUB_BOARD_WIDTH = 430
 /** Archive car dimensions (world units) and the spacing between car centres. */
 export const PUB_CAR = { length: 2.6, height: 0.72, width: 1.05, spacing: 3.15 }
 
-/** Reveal / retract timeline (seconds from the moment the mode changes). */
-export const PUBLICATIONS_TIMELINE = {
-  reveal: {
-    tracks: [0.35, 1.05],
-    cars: [0.95, 1.45],
-    /** The gantry drops in from above, then the board lights. */
-    gantry: [1.05, 1.5],
-    board: [1.35, 1.85],
-  },
-  retract: {
-    board: [0, 0.2],
-    gantry: [0.05, 0.35],
-    cars: [0, 0.25],
-    tracks: [0.1, 0.5],
-  },
+/**
+ * Reveal timeline (seconds from arrival). The gantry drops in from above,
+ * then the board lights. Leaving plays this same timeline backwards.
+ */
+const PUBLICATIONS_REVEAL = {
+  tracks: [0.35, 1.05],
+  cars: [0.95, 1.45],
+  gantry: [1.05, 1.5],
+  board: [1.35, 1.85],
 } as const
+
+export const PUBLICATIONS_TIMELINE = {
+  reveal: PUBLICATIONS_REVEAL,
+  retract: mirroredRetract(PUBLICATIONS_REVEAL),
+}

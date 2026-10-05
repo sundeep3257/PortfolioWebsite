@@ -2,6 +2,7 @@ import { useMemo, useRef } from 'react'
 import * as THREE from 'three'
 import { useFrame } from '@react-three/fiber'
 import { RoundedBox } from '@react-three/drei'
+import { clampDelta } from '../lib/lights'
 import { sampleJourney } from '../lib/routing'
 import { TRAIN_INTRO, useIntroReveal } from '../hooks/useIntroReveal'
 import { useTrainNavigationContext } from '../hooks/useTrainNavigation'
@@ -133,7 +134,7 @@ export function Train() {
       light.current.intensity = (light.current.userData.baseIntensity as number) * Math.min(intro, 1)
     }
 
-    if (active && active.holdBeforeDeparture > 0) active.holdBeforeDeparture -= delta
+    if (active && active.holdBeforeDeparture > 0) active.holdBeforeDeparture -= clampDelta(rawDelta)
 
     if (!active || active.holdBeforeDeparture > 0) {
       const { position, heading } = parkedPose.current

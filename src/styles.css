@@ -362,9 +362,11 @@ html[data-expanded='projects'] .station-label--projects {
 /*
  * Bullets cascade in one after another. `--p` (0..1, set per frame) is the
  * list's overall progress; item `--i` of `--n` fades in during its own slice.
+ * `--together: 1` drops the stagger so every line follows `--p` at once.
  */
 .skill-board__items li {
-  --k: clamp(0, calc(var(--p, 0) * var(--n, 4) - var(--i, 0)), 1);
+  --staggered: clamp(0, calc(var(--p, 0) * var(--n, 4) - var(--i, 0)), 1);
+  --k: calc((1 - var(--together, 0)) * var(--staggered) + var(--together, 0) * var(--p, 0));
   padding-left: 12px;
   text-indent: -12px;
   opacity: var(--k);

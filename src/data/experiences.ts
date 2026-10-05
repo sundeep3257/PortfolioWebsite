@@ -7,6 +7,7 @@
  */
 import experiencesSource from '../../content/Experiences.txt?raw'
 import { parseExperiences, slugify } from '../lib/parseContent'
+import { mirroredRetract } from '../lib/reveal'
 import { designToGroundAt, framingAround, STATION_ZOOM, type CameraFraming } from './camera'
 import { STATIONS } from './stations'
 
@@ -89,18 +90,15 @@ export const TICKET = {
 }
 export const TICKET_GROUND = designToGroundAt(EXPERIENCES_FRAMING, ...TICKET.centre)
 
-/** Reveal / retract timeline (seconds from the moment the mode changes). */
-export const EXPERIENCES_TIMELINE = {
-  reveal: {
-    tracks: [0.35, 1.05],
-    stations: [0.9, 1.2],
-    labels: [1.0, 1.4],
-    ticket: [1.2, 1.7],
-  },
-  retract: {
-    ticket: [0, 0.2],
-    labels: [0, 0.2],
-    stations: [0.05, 0.3],
-    tracks: [0.1, 0.5],
-  },
+/** Reveal timeline (seconds from arrival). Leaving plays it backwards. */
+const EXPERIENCES_REVEAL = {
+  tracks: [0.35, 1.05],
+  stations: [0.9, 1.2],
+  labels: [1.0, 1.4],
+  ticket: [1.2, 1.7],
 } as const
+
+export const EXPERIENCES_TIMELINE = {
+  reveal: EXPERIENCES_REVEAL,
+  retract: mirroredRetract(EXPERIENCES_REVEAL),
+}

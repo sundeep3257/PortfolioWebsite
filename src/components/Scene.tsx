@@ -20,7 +20,7 @@ import { PublicationsSubNetwork } from './PublicationsSubNetwork'
 import { SceneWarmup } from './SceneWarmup'
 
 interface SceneProps {
-  /** Fires when a station's sub-network expands / collapses, so overlays outside the canvas can react. */
+  /** Fires when the station close-up framing changes, so overlays outside the canvas can react. */
   onExpandedStationChange?: (station: ExpandableStation | null) => void
   /** True while the loading overlay is compiling hidden station graphics. */
   warming: boolean
@@ -63,8 +63,8 @@ function SceneContents({
   const handleReady = useCallback(() => onReady?.(), [onReady])
 
   useEffect(() => {
-    onExpandedStationChange?.(navigation.expandedStation)
-  }, [navigation.expandedStation, onExpandedStationChange])
+    onExpandedStationChange?.(navigation.closeupStation)
+  }, [navigation.closeupStation, onExpandedStationChange])
 
   return (
     <TrainNavigationContext.Provider value={navigation}>

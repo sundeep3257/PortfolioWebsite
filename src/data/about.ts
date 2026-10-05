@@ -7,6 +7,7 @@
  */
 import aboutSource from '../../content/About.txt?raw'
 import { parseAbout } from '../lib/parseContent'
+import { mirroredRetract } from '../lib/reveal'
 import { designToGroundAt, framingAround, STATION_ZOOM, type CameraFraming } from './camera'
 import { STATIONS } from './stations'
 
@@ -64,18 +65,15 @@ export const ABOUT_STRUCTURE = {
   sign: { depth: 0.65 },
 }
 
-/** Reveal / retract timeline (seconds from the moment the mode changes). */
-export const ABOUT_TIMELINE = {
-  reveal: {
-    tracks: [0.35, 0.95],
-    stations: [0.85, 1.15],
-    platform: [0.9, 1.35],
-    board: [1.15, 1.85],
-  },
-  retract: {
-    board: [0, 0.22],
-    platform: [0.05, 0.3],
-    stations: [0.05, 0.3],
-    tracks: [0.1, 0.5],
-  },
+/** Reveal timeline (seconds from arrival). Leaving plays it backwards. */
+const ABOUT_REVEAL = {
+  tracks: [0.35, 0.95],
+  stations: [0.85, 1.15],
+  platform: [0.9, 1.35],
+  board: [1.15, 1.85],
 } as const
+
+export const ABOUT_TIMELINE = {
+  reveal: ABOUT_REVEAL,
+  retract: mirroredRetract(ABOUT_REVEAL),
+}

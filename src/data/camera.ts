@@ -26,6 +26,9 @@ export const CAMERA_YAW = yaw
 /** Zoom (multiplier on BASE_ZOOM) shared by every station close-up. */
 export const STATION_ZOOM = 1.5
 
+/** Seconds the camera eases between the map and a station close-up. */
+export const CAMERA_MOVE_SECONDS = 1.25
+
 /**
  * Euler angles (order 'YXZ') for a plane that faces the camera square-on:
  * its local +Y is screen-up and local +X is screen-right.

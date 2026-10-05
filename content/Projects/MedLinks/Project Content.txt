@@ -3,11 +3,11 @@
 
 ##Category: Creative Projects
 
-##Train 1: Preclinical hydrocephalus research depends on accurate measurement of ventricular morphology, but manual and atlas-based methods are often slow and inaccurate. I developed AVA-TAR to provide a more robust and standardized approach.
+##Train 1: I created MedLinks as a fun way for my classmates and me to review high-yield concepts for the USMLE Step exams while testing how well we could recognize relationships across medicine.
 
-##Train 2: AVA-TAR uses a U-Net++ convolutional neural network to segment lateral ventricles in rat and mouse brain MRIs. Trained on hundreds of manually annotated scans, the pipeline generates 3D reconstructions and automatically measures ventricle volume, surface area, symmetry, and convexity.
+##Train 2: Inspired by the NYT Connections format, MedLinks challenges players to sort 16 medical terms into four hidden categories. Each puzzle draws from topics across specialties, including diagnoses, medications, anatomy, and clinical management.
 
-##Train 3: To make the tool broadly accessible, I deployed the validated pipeline as a public website. Researchers can upload MRIs and download results within seconds, enabling faster and more reproducible analysis of hydrocephalus.
+##Train 3: MedLinks makes studying feel more like solving a puzzle. New puzzles encourage pattern recognition, clinical associations, and friendly competition while giving us another way to prepare for our exams.
 
 ##Button Name: "Play MedLinks"
 ##Button Link: http://playmedlinks.com/

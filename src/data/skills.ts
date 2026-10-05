@@ -9,6 +9,7 @@
  */
 import skillsSource from '../../content/Skills.txt?raw'
 import { parseSkills } from '../lib/parseContent'
+import { mirroredRetract, timelineEnd, type Phase } from '../lib/reveal'
 import { designToGroundAt, framingAround, STATION_ZOOM, worldToDesignAt, type CameraFraming } from './camera'
 import { STATIONS } from './stations'
 
@@ -128,23 +129,42 @@ export function skillBoardBase(category: SkillCategory, offset: [number, number]
 }
 
 /**
- * Reveal / retract timeline (seconds from the moment the mode changes).
+ * Reveal timeline (seconds from the moment the station opens).
  *
  * `details` covers the bulleted lists of all three boards: the window is
  * split evenly between the categories in order and each list staggers its
  * bullets within its share.
  */
-export const SKILLS_TIMELINE = {
-  reveal: {
-    tracks: [0.35, 0.95],
-    stations: [0.85, 1.15],
-    boards: [1.0, 1.6],
-    details: [1.4, 3.6],
-  },
-  retract: {
-    details: [0, 0.2],
-    boards: [0, 0.22],
-    stations: [0.05, 0.3],
-    tracks: [0.1, 0.5],
-  },
+const SKILLS_REVEAL = {
+  tracks: [0.35, 0.95],
+  stations: [0.85, 1.15],
+  boards: [1.0, 1.6],
+  details: [1.4, 3.6],
 } as const
+
+/** On the way out every bullet fades at once, instead of line by line. */
+const TEXT_RETRACT_SECONDS = 0.4
+
+const mirrored = mirroredRetract(SKILLS_REVEAL)
+const textSaved = mirrored.details[1] - mirrored.details[0] - TEXT_RETRACT_SECONDS
+
+function earlier(phase: Phase, by: number): Phase {
+  return [phase[0] - by, phase[1] - by]
+}
+
+export const SKILLS_TIMELINE = {
+  reveal: SKILLS_REVEAL,
+  retract: {
+    details: [0, TEXT_RETRACT_SECONDS] as Phase,
+    boards: earlier(mirrored.boards, textSaved),
+    stations: earlier(mirrored.stations, textSaved),
+    tracks: earlier(mirrored.tracks, textSaved),
+  },
+}
+
+/**
+ * How long the train waits after Skills is left. The fold is shorter than the
+ * unfold because the bullets leave together; the extra beat is the same brief
+ * settle the other stations keep after their tracks finish.
+ */
+export const SKILLS_EXIT_SECONDS = timelineEnd(SKILLS_TIMELINE.retract) + SKILLS_REVEAL.tracks[0]

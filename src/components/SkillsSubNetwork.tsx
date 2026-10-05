@@ -129,7 +129,7 @@ function SkillBranch({ category, refs, widthBoost, baseOffset }: BranchProps) {
               <ul
                 ref={refs.details}
                 className="skill-board__items"
-                style={{ '--p': 0, '--n': category.items.length } as CSSProperties}
+                style={{ '--p': 0, '--together': 0, '--n': category.items.length } as CSSProperties}
               >
                 {category.items.map((item, i) => (
                   <li key={item} style={{ '--i': i } as CSSProperties}>
@@ -204,15 +204,20 @@ export function SkillsSubNetwork() {
         }
         refs.marker.current.opacity = stations
         refs.marker.current.scale = stations > 0 ? 0.6 + 0.4 * easeOutBack(stations) : 0
-        // Boards rise one after another, left to right; all fade together on retract.
-        const own = mode === 'reveal' ? clamp01((boards * (categoryCount + 1) - ci) / 2) : boards
+        // Boards rise left to right, and fold away in reverse.
+        const own = clamp01((boards * (categoryCount + 1) - ci) / 2)
         refs.pedestal.current.rise = easeOutCubic(own)
         // The slab rises out of the pedestal just behind it; the face lights once it is up.
         refs.slab.current.k = easeOutCubic(clamp01(own * 1.25))
         applyReveal(refs.board.current, easeOutCubic(clamp01(own * 1.6 - 0.6)), 6)
         // Each category owns an equal slice of the details window, in order.
+        // Leaving fades every bullet at once.
         const listProgress = mode === 'reveal' ? clamp01(details * categoryCount - ci) : details
-        refs.details.current?.style.setProperty('--p', listProgress.toFixed(3))
+        const list = refs.details.current
+        if (list) {
+          list.style.setProperty('--p', listProgress.toFixed(3))
+          list.style.setProperty('--together', mode === 'retract' ? '1' : '0')
+        }
       })
     },
     root,

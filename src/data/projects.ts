@@ -7,6 +7,7 @@
  * Titles, subtitles, categories, page copy, buttons, and stills are loaded
  * from `content/Projects/<folder>/` — nothing project-specific is hard-coded.
  */
+import { mirroredRetract } from '../lib/reveal'
 import { designToGroundAt, framingAround, STATION_ZOOM, type CameraFraming } from './camera'
 import {
   parseProject,
@@ -218,16 +219,14 @@ export const PROJECT_PANEL_GAP = 30
 /** Height of one project row in the list (design px). */
 export const PROJECT_ROW_HEIGHT = 108
 
-/** Reveal / retract timeline (seconds from the moment the mode changes). */
-export const PROJECTS_TIMELINE = {
-  reveal: {
-    tracks: [0.35, 0.95],
-    stations: [0.85, 1.15],
-    panels: [1.05, 1.6],
-  },
-  retract: {
-    panels: [0, 0.2],
-    stations: [0.05, 0.3],
-    tracks: [0.1, 0.5],
-  },
+/** Reveal timeline (seconds from arrival). Leaving plays it backwards. */
+const PROJECTS_REVEAL = {
+  tracks: [0.35, 0.95],
+  stations: [0.85, 1.15],
+  panels: [1.05, 1.6],
 } as const
+
+export const PROJECTS_TIMELINE = {
+  reveal: PROJECTS_REVEAL,
+  retract: mirroredRetract(PROJECTS_REVEAL),
+}

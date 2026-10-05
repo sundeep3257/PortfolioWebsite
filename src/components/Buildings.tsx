@@ -38,7 +38,7 @@ const RETRACT_DURATION = 0.45
 /**
  * Decoration flagged `hideWhenExpanded` sinks into the ground plane while
  * one of the listed stations' sub-networks is open, clearing space for its
- * labels / billboards, and rises back once the train leaves.
+ * labels / billboards, and rises back as that close-up eases out.
  *
  * `intro` multiplies that height so the same group can erect from the ground
  * during the homepage intro without changing the settled look.
@@ -56,7 +56,7 @@ function Retractable({
   intro?: { start: number; end: number }
   children: ReactNode
 }) {
-  const { expandedStation } = useTrainNavigationContext()
+  const { closeupStation } = useTrainNavigationContext()
   const { pop } = useIntroReveal()
   const group = useRef<THREE.Group>(null)
   const progress = useRef(1) // 1 = fully raised, 0 = sunk
@@ -66,7 +66,7 @@ function Retractable({
     if (!g) return
 
     if (hideWhen?.length) {
-      const target = expandedStation && hideWhen.includes(expandedStation) ? 0 : 1
+      const target = closeupStation && hideWhen.includes(closeupStation) ? 0 : 1
       const step = Math.min(delta, 1 / 30) / RETRACT_DURATION
       progress.current = THREE.MathUtils.clamp(
         progress.current + Math.sign(target - progress.current) * Math.min(step, Math.abs(target - progress.current)),

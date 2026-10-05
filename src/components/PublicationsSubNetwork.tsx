@@ -188,14 +188,14 @@ export function PublicationsSubNetwork() {
   useRevealTimeline(
     expanded,
     PUBLICATIONS_TIMELINE,
-    (phase, mode) => {
+    (phase) => {
       const tracks = easeOutCubic(phase('tracks'))
       trunkAnim.current.progress = tracks
       const carPhase = phase('cars')
       cars.forEach((car, i) => {
-        // Cars appear one after another from the one under the board; all shrink together on retract.
+        // Cars appear from the one under the board outward, and leave in reverse.
         const distance = i / Math.max(1, PUBLICATIONS.length - 1)
-        car.reveal = mode === 'reveal' ? clamp01(carPhase * 1.5 - distance * 0.5) : carPhase
+        car.reveal = clamp01(carPhase * 1.5 - distance * 0.5)
       })
       // The gantry lowers in from above, then the board lights up beneath it.
       applyReveal(gantry.current, easeOutCubic(phase('gantry')), -40)
