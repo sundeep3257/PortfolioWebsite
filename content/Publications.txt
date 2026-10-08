@@ -6,7 +6,15 @@
 ##Authors: Sundeep Chakladar, Shelei Pan, Owen Limbrick, Maneesha Pandey, Grace L Halupnik, Annie Zhao, Moe R Mahjoub, James D Quirk, Arash Nazeri, Jennifer M Strahle
 ##PubMed: https://pubmed.ncbi.nlm.nih.gov/42431564/
 
-##Publication 2: Automated Detection of Pediatric Slipped Capital Femoral Epiphysis: A Deep Learning Approach Using Anatomically Informed Attention Guidance
+##Publication 2: Measuring Knee Alignment Following Distal Femur Fracture Surgery: A Novel Deep Learning Approach
+##Journal: Journal of Orthopaedic Trauma
+##Short: J Orthop Trauma
+##Date: October 7, 2026
+##Year: 2026
+##Authors: Daniel E Pereira, Sundeep Chakladar, Noah J Harrison, Brian D Rust, Mitchel R Obey, Christopher M McAndrew, Marschall B Berkes, Jenna L Wilson
+##PubMed: https://pubmed.ncbi.nlm.nih.gov/42841451/
+
+##Publication 3: Automated Detection of Pediatric Slipped Capital Femoral Epiphysis: A Deep Learning Approach Using Anatomically Informed Attention Guidance
 ##Journal: Journal of Pediatric Orthopaedics
 ##Short: J Pediatr Orthop
 ##Date: April 7, 2026
@@ -14,7 +22,7 @@
 ##Authors: Sundeep Chakladar, Daniel E Pereira, Javad Shariati, Pooya Hosseinzadeh
 ##PubMed: https://pubmed.ncbi.nlm.nih.gov/41946451/
 
-##Publication 3: Accuracy and Reliability of Wearable Devices, Image Analysis Software, and Smartphone Apps for Hand Goniometry: A Systematic Review
+##Publication 4: Accuracy and Reliability of Wearable Devices, Image Analysis Software, and Smartphone Apps for Hand Goniometry: A Systematic Review
 ##Journal: Hand
 ##Short: Hand
 ##Date: April 6, 2026
@@ -22,7 +30,7 @@
 ##Authors: Sundeep Chakladar, Cole I Davis, Eshan S Sane, Christopher J Dy, David M Brogan
 ##PubMed: https://pubmed.ncbi.nlm.nih.gov/41943283/
 
-##Publication 4: Development and Validation of an Automated Pipeline for the Detection of Monteggia Fracture Dislocations in Pediatric Radiographs
+##Publication 5: Development and Validation of an Automated Pipeline for the Detection of Monteggia Fracture Dislocations in Pediatric Radiographs
 ##Journal: Journal of Pediatric Orthopaedics
 ##Short: J Pediatr Orthop
 ##Date: December 15, 2025
@@ -30,7 +38,7 @@
 ##Authors: Sundeep Chakladar, Daniel E Pereira, Neset Tang, Rohit Siddabattula, Pooya Hosseinzadeh
 ##PubMed: https://pubmed.ncbi.nlm.nih.gov/41395634/
 
-##Publication 5: Accuracy of the Automated Range of Motion Observer and Reporter Software for Fully Automated Joint Measurement From Patient Videos
+##Publication 6: Accuracy of the Automated Range of Motion Observer and Reporter Software for Fully Automated Joint Measurement From Patient Videos
 ##Journal: JAAOS Global Research & Reviews
 ##Short: JAAOS Glob Res Rev
 ##Date: September 8, 2025

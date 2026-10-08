@@ -15,7 +15,7 @@ export const SITE_TAGLINE = 'Medicine / AI / Software'
 export const SITE_MOTTO = 'Identifying problems. Building solutions. Translating to care.'
 
 export const DEFAULT_DESCRIPTION =
-  'Sundeep Chakladar is a medical student at Washington University in St. Louis (WashU) with research roots at MIT, building medical image analysis, clinical decision-support tools, and full-stack applications at the intersection of medicine, AI, and software.'
+  "I'm a medical student at WashU interested in building technology at the intersection of medicine, engineering, and design. My work spans medical AI, clinical tools, web development, and creative projects focused on making technology more intuitive and impactful."
 
 export const OG_IMAGE_PATH = '/og-image.png'
 export const OG_IMAGE_ALT = 'Sundeep Chakladar — Medicine, AI, and Software'
@@ -36,7 +36,7 @@ export function absoluteUrl(path = '/') {
 
 export function homeMeta(): PageMeta {
   return {
-    title: `${SITE_NAME} | Medical AI, Research & Software Portfolio`,
+    title: `${SITE_NAME} - Medicine, AI, and Software`,
     description: DEFAULT_DESCRIPTION,
     canonicalPath: '/',
     type: 'website',
