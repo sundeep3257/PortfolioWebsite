@@ -19,7 +19,7 @@ import { useTrainNavigationContext } from '../hooks/useTrainNavigation'
 import { getRadialGlowTexture } from '../lib/textures'
 import { applyReveal, approach, clamp01, easeOutBack, easeOutCubic, useRevealTimeline } from '../lib/reveal'
 import { STATION_OVERRUN } from './SubwayMap'
-import { RibbonTrack, type RibbonAnimation } from './RibbonTrack'
+import { RibbonTrack, buildRoundedPath, type RibbonAnimation } from './RibbonTrack'
 import { WorldPanel } from './WorldPanel'
 import { useWideLayout } from '../hooks/useWideLayout'
 import { ChevronLeftIcon, ChevronRightIcon, ExternalLinkIcon } from './Icons'
@@ -29,6 +29,28 @@ const CAR_ROOF = '#8288aa'
 const CAR_TRIM = '#0e0f16'
 /** Corner radius of the siding where it leaves the trunk (world units). */
 const SIDING_RADIUS = 1.6
+
+const _carPos = new THREE.Vector3()
+const _carTan = new THREE.Vector3()
+
+/**
+ * Samples the archive siding at arc-length `s`, extrapolating past either end
+ * so cars that slide off the authored path stay aligned with the track.
+ */
+function sampleArchivePath(
+  path: THREE.CurvePath<THREE.Vector3>,
+  length: number,
+  s: number,
+  outPosition: THREE.Vector3,
+  outTangent: THREE.Vector3,
+) {
+  const clamped = THREE.MathUtils.clamp(s, 0, length)
+  const u = length > 0 ? clamped / length : 0
+  path.getPointAt(u, outPosition)
+  path.getTangentAt(u, outTangent)
+  const overshoot = s - clamped
+  if (overshoot !== 0) outPosition.addScaledVector(outTangent, overshoot)
+}
 
 /** Per-car mutable state driven each frame. */
 interface CarState {
@@ -71,7 +93,7 @@ function ArchiveCar({ index, state, selected, interactive, onSelect }: CarProps)
   }, [state, windowMat])
 
   return (
-    <group ref={(g) => void (state.group = g)} position={[index * PUB_CAR.spacing, 0, 0]}>
+    <group ref={(g) => void (state.group = g)}>
       <RoundedBox
         args={[length, height, width]}
         radius={0.18}
@@ -141,9 +163,11 @@ function ArchiveCar({ index, state, selected, interactive, onSelect }: CarProps)
 
 /**
  * The Publications close-up: a siding curves off the trunk below the station
- * and an archive train stands on it, one car per paper. The car in front of
- * the reading board is the open publication; choose a car (or step with the
- * board's arrows) and the train rolls until that car is at the platform.
+ * and an archive train stands on it, one car per paper. Cars that do not fit
+ * on the horizontal siding continue around the corner onto the vertical trunk
+ * toward the station. The car in front of the reading board is the open
+ * publication; choose a car (or step with the board's arrows) and the train
+ * rolls along the path until that car is at the platform.
  * Hidden on the landing map; unfolds once the train has come to rest.
  */
 export function PublicationsSubNetwork() {
@@ -151,7 +175,6 @@ export function PublicationsSubNetwork() {
   const { widthBoost } = useWideLayout()
   const expanded = expandedStation === 'publications'
   const root = useRef<THREE.Group>(null)
-  const train = useRef<THREE.Group>(null)
   const board = useRef<HTMLDivElement>(null)
   const gantry = useRef<HTMLDivElement>(null)
   const [selected, setSelected] = useState(0)
@@ -166,12 +189,15 @@ export function PublicationsSubNetwork() {
   )
   const slide = useRef({ offset: 0 })
 
-  // Direction the siding runs on the ground (screen-right).
-  const heading = useMemo(() => {
-    const dx = PUB_JUNCTION[0] - PUB_SIDING_LEFT[0]
-    const dz = PUB_JUNCTION[1] - PUB_SIDING_LEFT[1]
-    return Math.atan2(-dz, dx)
-  }, [])
+  // Same centreline as the ribbon, oriented left → junction → station so
+  // increasing car index travels toward / around the corner.
+  const archivePath = useMemo(() => {
+    const path = buildRoundedPath([PUB_SIDING_LEFT, PUB_JUNCTION, station], SIDING_RADIUS, 0)
+    const length = path.getLength()
+    // PUB_STOP sits on the first straight, before the corner begins.
+    const stopS = Math.hypot(PUB_STOP[0] - PUB_SIDING_LEFT[0], PUB_STOP[1] - PUB_SIDING_LEFT[1])
+    return { path, length, stopS }
+  }, [station])
 
   useEffect(() => {
     if (expanded) {
@@ -206,12 +232,15 @@ export function PublicationsSubNetwork() {
   )
 
   useFrame((_, delta) => {
-    // Roll the train so the selected car stops at the platform.
+    // Roll along the siding so the selected car stops at the platform.
     slide.current.offset = approach(slide.current.offset, -selected * PUB_CAR.spacing, delta, 5)
-    if (train.current) train.current.position.x = slide.current.offset
+    const { path, length, stopS } = archivePath
     cars.forEach((car, i) => {
       car.lit = approach(car.lit, i === selected ? 1 : 0, delta, 6)
       if (car.group) {
+        sampleArchivePath(path, length, stopS + i * PUB_CAR.spacing + slide.current.offset, _carPos, _carTan)
+        car.group.position.copy(_carPos)
+        car.group.rotation.set(0, Math.atan2(-_carTan.z, _carTan.x), 0)
         const s = car.reveal > 0 ? 0.6 + 0.4 * easeOutBack(car.reveal) : 0
         car.group.visible = car.reveal > 0.001
         car.group.scale.setScalar(Math.max(s, 0.0001))
@@ -238,21 +267,17 @@ export function PublicationsSubNetwork() {
         anim={trunkAnim}
       />
 
-      {/* Archive train on the siding; local x runs along the siding towards screen-right */}
-      <group position={[PUB_STOP[0], 0, PUB_STOP[1]]} rotation={[0, heading, 0]}>
-        <group ref={train}>
-          {PUBLICATIONS.map((pub, i) => (
-            <ArchiveCar
-              key={pub.id}
-              index={i}
-              state={cars[i]}
-              selected={i === selected}
-              interactive={interactive}
-              onSelect={select}
-            />
-          ))}
-        </group>
-      </group>
+      {/* Archive train on the siding; each car follows the rounded path into the corner */}
+      {PUBLICATIONS.map((pub, i) => (
+        <ArchiveCar
+          key={pub.id}
+          index={i}
+          state={cars[i]}
+          selected={i === selected}
+          interactive={interactive}
+          onSelect={select}
+        />
+      ))}
 
       {/* Reading board hanging from an overhead gantry above the stopped car */}
       <WorldPanel
